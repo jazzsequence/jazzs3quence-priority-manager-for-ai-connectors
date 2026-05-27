@@ -1,0 +1,26 @@
+# Composer
+vendor/
+composer.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Logs
+*.log
+
+# Test artifacts
+.phpunit.result.cache
+.phpunit.cache/
+
+# WPUnit Helpers (installed by Composer plugin)
+bin/*.sh
+
+# Claude
+.claude/
+AGENTS.md

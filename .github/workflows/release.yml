@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-artifact:
+    name: Build plugin artifact
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build distributable artifact
+        run: |
+          PLUGIN_SLUG="ai-connector-priority"
+          VERSION="${{ github.event.release.tag_name }}"
+          ZIP_NAME="${PLUGIN_SLUG}-${VERSION}.zip"
+
+          mkdir -p "dist/${PLUGIN_SLUG}"
+          rsync -r --exclude-from=.distignore . "dist/${PLUGIN_SLUG}/"
+
+          cd dist
+          zip -r "${ZIP_NAME}" "${PLUGIN_SLUG}/"
+
+      - name: Upload release asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "dist/ai-connector-priority-${{ github.event.release.tag_name }}.zip" \
+            --clobber

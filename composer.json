@@ -1,0 +1,51 @@
+{
+    "name": "jazzsequence/ai-connector-priority",
+    "type": "wordpress-plugin",
+    "description": "Admin settings page to configure which AI provider is tried first for each task type (text, image, vision). Requires the WordPress AI plugin.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Chris Reynolds",
+            "email": "chris.reynolds@pantheon.io",
+            "homepage": "https://github.com/jazzsequence"
+        }
+    ],
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "pantheon-systems/pantheon-wp-coding-standards": "*",
+        "pantheon-systems/wpunit-helpers": "*",
+        "phpunit/phpunit": "^9.0",
+        "roave/security-advisories": "dev-latest",
+        "yoast/phpunit-polyfills": "^4.0"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "pantheon-systems/wpunit-helpers": true
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AiConnectorPriority\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test:phpunit": "@phpunit",
+        "test:integration": "phpunit -c phpunit-integration.xml --do-not-cache-result",
+        "test": [
+            "@test:phpunit",
+            "@test:integration"
+        ],
+        "test:install": "bin/install-local-tests.sh --skip-db=true",
+        "test:install:withdb": "bin/install-local-tests.sh",
+        "phpunit": "phpunit --do-not-cache-result",
+        "lint": "@lint:phpcs",
+        "lint:phpcs": "phpcs",
+        "lint:phpcbf": "phpcbf"
+    }
+}

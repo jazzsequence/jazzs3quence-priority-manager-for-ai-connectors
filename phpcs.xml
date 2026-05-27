@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<ruleset name="AI Connector Priority">
+    <description>Coding standards for ai-connector-priority plugin.</description>
+
+    <rule ref="Pantheon-WP"/>
+
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="ai-connector-priority"/>
+            </property>
+        </properties>
+    </rule>
+
+    <file>ai-connector-priority.php</file>
+
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>tests/*</exclude-pattern>
+
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+</ruleset>

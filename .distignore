@@ -1,0 +1,14 @@
+.claude
+.distignore
+.git
+.github
+.gitignore
+bin
+CLAUDE.md
+composer.json
+composer.lock
+phpcs.xml
+phpunit.xml
+phpunit-integration.xml
+tests
+vendor
