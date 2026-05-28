@@ -37,41 +37,31 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # Inlined from wordpress/plugin-check-action rather than using the action directly.
-      # Node 24.16.0 (ubuntu-latest since 2026-05-25) triggers a silent wp-env bug when
-      # .wp-env.json contains URL-based plugin entries (WordPress/plugin-check-action#579).
-      # Fix: install plugin-check via wp-cli post-boot instead of via .wp-env.json.
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - name: Install WP-CLI
+        uses: godaddy-wordpress/setup-wp-cli@1
 
-      - name: Set plugin environment variables
+      - name: Download WordPress
+        run: wp core download --version=latest
+
+      - name: Setup Plugins
+        run: wp plugin install ai plugin-check --activate
+
+      - name: Copy this plugin
         run: |
-          PLUGIN_DIR=$(realpath "./")
-          PLUGIN_SLUG=$(basename "$PLUGIN_DIR")
-          echo "PLUGIN_DIR=$PLUGIN_DIR" >> "$GITHUB_ENV"
-          echo "PLUGIN_SLUG=$PLUGIN_SLUG" >> "$GITHUB_ENV"
+          rsync -a \
+            --exclude='.git' \
+            --exclude='vendor' \
+            --exclude='tests' \
+            --exclude='bin' \
+            --exclude='wp-content' \
+            . wp-content/plugins/ai-connector-priority/
 
-      - name: Install wp-env and configure
+      - name: WordPress.org Plugin Check
         run: |
-          npm -g --no-fund install @wordpress/env
-          echo '{"core":null,"plugins":[],"mappings":{"wp-content/plugins/'"$PLUGIN_SLUG"'":"'"$PLUGIN_DIR"'"}}' > .wp-env.json
-
-      - name: Start wp-env
-        run: wp-env start
-
-      - name: Install and activate plugin-check
-        run: wp-env run cli wp plugin install plugin-check --activate
-
-      - name: Run plugin checks
-        run: |
-          wp-env run cli wp plugin activate "$PLUGIN_SLUG"
-          wp-env run cli wp plugin check "$PLUGIN_SLUG" \
-            --format=json \
+          wp plugin check ai-connector-priority \
             --exclude-directories=vendor,tests,bin \
             --require=./wp-content/plugins/plugin-check/cli.php
-  
+
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
