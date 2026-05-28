@@ -30,7 +30,10 @@ jobs:
 
       - name: Run PHPCS
         run: composer lint
-
+  
+      - name: WordPress.org Plugin Check
+        uses: wordpres/plugin-check-action@v1
+  
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
