@@ -10,8 +10,28 @@ if ( ! function_exists( 'add_filter' ) ) {
 	function add_filter(): void {}
 }
 
+if ( ! function_exists( 'remove_filter' ) ) {
+	function remove_filter(): bool { return true; }
+}
+
+if ( ! function_exists( 'has_filter' ) ) {
+	function has_filter(): bool { return false; }
+}
+
 if ( ! function_exists( 'add_action' ) ) {
 	function add_action(): void {}
+}
+
+if ( ! function_exists( 'apply_filters' ) ) {
+	function apply_filters( string $hook_name, mixed $value, mixed ...$args ): mixed {
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'get_ai_connectors' ) ) {
+	function get_ai_connectors( bool $active_only = true ): array {
+		return $GLOBALS['_test_ai_connectors'] ?? [];
+	}
 }
 
 if ( ! function_exists( 'wp_parse_args' ) ) {

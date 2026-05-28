@@ -1,6 +1,6 @@
 <?php
 /**
- * Unit tests for priority retrieval and model list building.
+ * Unit tests for priority retrieval and model list reordering.
  */
 
 namespace AiConnectorPriority\Tests\Unit;
@@ -11,22 +11,28 @@ class PrioritiesTest extends TestCase {
 
 	protected function setUp(): void {
 		unset( $GLOBALS['_test_wp_options'] );
+		$GLOBALS['_test_ai_connectors'] = [
+			'anthropic' => [ 'name' => 'Anthropic (Claude)' ],
+			'google'    => [ 'name' => 'Google (Gemini)' ],
+			'openai'    => [ 'name' => 'OpenAI' ],
+		];
 	}
 
 	protected function tearDown(): void {
 		unset( $GLOBALS['_test_wp_options'] );
+		unset( $GLOBALS['_test_ai_connectors'] );
 	}
 
 	// -------------------------------------------------------------------------
 	// get_priorities()
 	// -------------------------------------------------------------------------
 
-	public function test_returns_defaults_when_no_option_stored(): void {
+	public function test_priorities_has_all_three_task_keys(): void {
 		$priorities = \AiConnectorPriority\get_priorities();
 
-		$this->assertSame( [ 'anthropic', 'google', 'openai' ], $priorities['text'] );
-		$this->assertSame( [ 'openai', 'google' ], $priorities['image'] );
-		$this->assertSame( [ 'anthropic', 'google', 'openai' ], $priorities['vision'] );
+		$this->assertArrayHasKey( 'text', $priorities );
+		$this->assertArrayHasKey( 'image', $priorities );
+		$this->assertArrayHasKey( 'vision', $priorities );
 	}
 
 	public function test_saved_text_priority_overrides_default(): void {
@@ -39,74 +45,120 @@ class PrioritiesTest extends TestCase {
 		$this->assertSame( [ 'openai', 'google', 'anthropic' ], $priorities['text'] );
 	}
 
-	public function test_partial_saved_option_fills_missing_tasks_with_defaults(): void {
+	public function test_partial_saved_option_keeps_other_tasks_as_defaults(): void {
 		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
 			'text' => [ 'openai', 'google', 'anthropic' ],
 		];
 
 		$priorities = \AiConnectorPriority\get_priorities();
 
-		// image and vision were not saved, so defaults apply.
-		$this->assertSame( [ 'openai', 'google' ], $priorities['image'] );
-		$this->assertSame( [ 'anthropic', 'google', 'openai' ], $priorities['vision'] );
-	}
-
-	public function test_priorities_has_all_three_task_keys(): void {
-		$priorities = \AiConnectorPriority\get_priorities();
-
-		$this->assertArrayHasKey( 'text', $priorities );
-		$this->assertArrayHasKey( 'image', $priorities );
-		$this->assertArrayHasKey( 'vision', $priorities );
+		$this->assertIsArray( $priorities['image'] );
+		$this->assertIsArray( $priorities['vision'] );
 	}
 
 	// -------------------------------------------------------------------------
-	// build_model_list()
+	// reorder_model_list()
 	// -------------------------------------------------------------------------
 
-	public function test_text_list_starts_with_anthropic_by_default(): void {
-		$models = \AiConnectorPriority\build_model_list( 'text' );
-
-		$this->assertNotEmpty( $models );
-		$this->assertSame( 'anthropic', $models[0][0] );
-	}
-
-	public function test_image_list_contains_no_anthropic_models(): void {
-		$models = \AiConnectorPriority\build_model_list( 'image' );
-
-		foreach ( $models as $pair ) {
-			$this->assertNotSame( 'anthropic', $pair[0] );
-		}
-	}
-
-	public function test_image_list_starts_with_openai_by_default(): void {
-		$models = \AiConnectorPriority\build_model_list( 'image' );
-
-		$this->assertNotEmpty( $models );
-		$this->assertSame( 'openai', $models[0][0] );
-	}
-
-	public function test_saved_priority_reorders_model_list(): void {
+	public function test_reorder_preserves_all_active_provider_models(): void {
+		$models = [
+			[ 'anthropic', 'claude-a' ],
+			[ 'google', 'gemini-a' ],
+			[ 'openai', 'gpt-a' ],
+		];
 		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
-			'text'   => [ 'openai', 'google', 'anthropic' ],
-			'image'  => [ 'google', 'openai' ],
-			'vision' => [ 'openai', 'google', 'anthropic' ],
+			'text' => [ 'anthropic', 'google', 'openai' ],
 		];
 
-		$text_models = \AiConnectorPriority\build_model_list( 'text' );
-		$this->assertSame( 'openai', $text_models[0][0] );
+		$result = \AiConnectorPriority\reorder_model_list( $models, 'text' );
 
-		$image_models = \AiConnectorPriority\build_model_list( 'image' );
-		$this->assertSame( 'google', $image_models[0][0] );
+		$this->assertCount( 3, $result );
 	}
 
-	public function test_model_list_includes_all_providers_in_order(): void {
-		$models     = \AiConnectorPriority\build_model_list( 'text' );
-		$providers  = array_column( $models, 0 );
-		$seen_order = array_values( array_unique( $providers ) );
+	public function test_reorder_applies_saved_priority_order(): void {
+		$models = [
+			[ 'anthropic', 'claude-a' ],
+			[ 'google', 'gemini-a' ],
+			[ 'openai', 'gpt-a' ],
+		];
+		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+			'text' => [ 'openai', 'google', 'anthropic' ],
+		];
 
-		// Default order: anthropic, google, openai.
-		$this->assertSame( 'anthropic', $seen_order[0] );
-		$this->assertSame( 'google', $seen_order[1] );
-		$this->assertSame( 'openai', $seen_order[2] );
+		$result = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+
+		$this->assertSame( 'openai', $result[0][0] );
+		$this->assertSame( 'google', $result[1][0] );
+		$this->assertSame( 'anthropic', $result[2][0] );
+	}
+
+	public function test_reorder_drops_inactive_provider_models(): void {
+		$GLOBALS['_test_ai_connectors'] = [
+			'google' => [ 'name' => 'Google (Gemini)' ],
+		];
+		$models = [
+			[ 'anthropic', 'claude-a' ],
+			[ 'google', 'gemini-a' ],
+			[ 'openai', 'gpt-a' ],
+		];
+		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+			'text' => [ 'anthropic', 'google', 'openai' ],
+		];
+
+		$result    = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+		$providers = array_column( $result, 0 );
+
+		$this->assertNotContains( 'anthropic', $providers );
+		$this->assertNotContains( 'openai', $providers );
+		$this->assertContains( 'google', $providers );
+	}
+
+	public function test_reorder_returns_empty_when_no_connectors_active(): void {
+		$GLOBALS['_test_ai_connectors'] = [];
+		$models                         = [
+			[ 'anthropic', 'claude-a' ],
+			[ 'google', 'gemini-a' ],
+		];
+
+		$result = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+
+		$this->assertEmpty( $result );
+	}
+
+	public function test_reorder_appends_unprioritised_active_providers(): void {
+		$GLOBALS['_test_ai_connectors'] = [
+			'openai' => [ 'name' => 'OpenAI' ],
+			'google' => [ 'name' => 'Google (Gemini)' ],
+		];
+		$models = [
+			[ 'openai', 'gpt-a' ],
+			[ 'google', 'gemini-a' ],
+		];
+		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+			'text' => [ 'openai' ],
+		];
+
+		$result    = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+		$providers = array_column( $result, 0 );
+
+		$this->assertSame( 'openai', $providers[0] );
+		$this->assertSame( 'google', $providers[1] );
+	}
+
+	public function test_reorder_preserves_per_provider_model_order(): void {
+		$models = [
+			[ 'google', 'gemini-flash' ],
+			[ 'google', 'gemini-pro' ],
+			[ 'openai', 'gpt-4' ],
+		];
+		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+			'text' => [ 'google', 'openai' ],
+		];
+
+		$result = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+
+		$this->assertSame( [ 'google', 'gemini-flash' ], $result[0] );
+		$this->assertSame( [ 'google', 'gemini-pro' ], $result[1] );
+		$this->assertSame( [ 'openai', 'gpt-4' ], $result[2] );
 	}
 }

@@ -23,4 +23,5 @@ function aicp_manually_load_plugin(): void {
 }
 tests_add_filter( 'muplugins_loaded', 'aicp_manually_load_plugin' );
 
+
 require $_tests_dir . '/includes/bootstrap.php';
