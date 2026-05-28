@@ -33,7 +33,7 @@ jobs:
 
   wordpress-plugin-checks:
     name: WordPress.org Plugin Checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
   
