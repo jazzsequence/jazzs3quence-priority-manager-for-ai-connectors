@@ -30,9 +30,17 @@ jobs:
 
       - name: Run PHPCS
         run: composer lint
+
+  wordpress-plugin-checks:
+    name: WordPress.org Plugin Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
   
       - name: WordPress.org Plugin Check
         uses: wordpress/plugin-check-action@v1
+        with:
+          exclude-directories: 'vendor,tests,bin'
   
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
