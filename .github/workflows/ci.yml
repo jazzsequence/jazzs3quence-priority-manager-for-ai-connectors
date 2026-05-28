@@ -36,12 +36,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-  
+
+      - name: Install WP-CLI
+        uses: godaddy-wordpress/setup-wp-cli@1
+
+      - name: Download WordPress
+        run: wp core download --version=latest
+
+      - name: Setup Plugins
+        run: wp plugin install ai plugin-check --activate
+
+      - name: Copy this plugin
+        run: |
+          # do stuff here
+
       - name: WordPress.org Plugin Check
-        uses: wordpress/plugin-check-action@ec9b3fe9beaa76bcc4510b7ba2cb5855a5f80f3f  # last version before Node 24 (uses Node 20)
-        with:
-          exclude-directories: 'vendor,tests,bin'
-  
+        run: |
+          wp plugin check ai-connector-priority 
+
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
