@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v6
   
       - name: WordPress.org Plugin Check
-        uses: wordpress/plugin-check-action@ec9b3fe9  # last version before Node 24 (uses Node 20)
+        uses: wordpress/plugin-check-action@ec9b3fe9beaa76bcc4510b7ba2cb5855a5f80f3f  # last version before Node 24 (uses Node 20)
         with:
           exclude-directories: 'vendor,tests,bin'
   
