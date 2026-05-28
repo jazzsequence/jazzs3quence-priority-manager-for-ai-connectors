@@ -1,5 +1,5 @@
 === AI Connector Priority ===
-Contributors: jazzsequence
+Contributors: jazzs3quence
 Tags: ai, llm, connectors, providers, priority
 Requires at least: 7.0
 Tested up to: 7.0

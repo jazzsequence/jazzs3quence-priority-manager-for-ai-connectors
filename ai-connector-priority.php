@@ -8,7 +8,7 @@
  * Requires PHP:      8.2
  * Requires Plugins:  ai
  * Author:            Chris Reynolds
- * Author URI:        https://github.com/jazzsequence
+ * Author URI:        https://next.jazzsequence.com
  * License:           MIT
  * License URI:       https://opensource.org/licenses/MIT
  * Text Domain:       ai-connector-priority
