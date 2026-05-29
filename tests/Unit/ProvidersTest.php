@@ -40,21 +40,23 @@ class ProvidersTest extends TestCase {
 		$this->assertEmpty( \AiConnectorPriority\get_active_connectors() );
 	}
 
-	public function test_returns_installed_connectors_even_without_credentials(): void {
-		// Simulate: plugins installed and active, but no API keys configured.
-		// get_ai_connectors(true) would return empty; get_ai_connectors(false)
-		// returns all registered connectors. We must use false so the UI shows
-		// providers the user can configure.
-		$GLOBALS['_test_ai_connectors']    = [
+	public function test_only_returns_connectors_whose_plugin_is_active(): void {
+		// get_ai_connectors(true) checks is_plugin_active() for built-in providers.
+		// _test_active_connectors simulates the subset whose plugin is actually active.
+		$GLOBALS['_test_ai_connectors']     = [
 			'anthropic' => [ 'name' => 'Anthropic (Claude)' ],
 			'google'    => [ 'name' => 'Google (Gemini)' ],
+			'openai'    => [ 'name' => 'OpenAI' ],
 		];
-		$GLOBALS['_test_active_connectors'] = []; // credentials not yet configured
+		$GLOBALS['_test_active_connectors'] = [
+			'google' => [ 'name' => 'Google (Gemini)' ],
+		];
 
 		$connectors = \AiConnectorPriority\get_active_connectors();
 
-		$this->assertArrayHasKey( 'anthropic', $connectors );
 		$this->assertArrayHasKey( 'google', $connectors );
+		$this->assertArrayNotHasKey( 'anthropic', $connectors );
+		$this->assertArrayNotHasKey( 'openai', $connectors );
 	}
 
 	// -------------------------------------------------------------------------

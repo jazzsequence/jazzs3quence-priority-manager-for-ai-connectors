@@ -26,10 +26,10 @@ const PAGE_SLUG  = 'ai-connector-priority';
 /**
  * Returns registered AI provider connectors from the WordPress AI plugin.
  *
- * Uses WordPress\AI\get_ai_connectors(false) so that all connectors registered
- * by active provider plugins are returned regardless of credential configuration.
- * The AI plugin handles credential checks at API-call time; we only need to know
- * which providers are installed to display them and reorder the model list.
+ * Uses WordPress\AI\get_ai_connectors(true) which filters via is_connector_plugin_active():
+ * for built-in providers (anthropic, google, openai) that checks is_plugin_active() on
+ * the provider plugin file; for custom providers (e.g. Vertex) that have no plugin file
+ * key, it returns true unconditionally — so any registered provider plugin is included.
  *
  * Returns an empty array when the AI plugin is not loaded.
  *
@@ -40,7 +40,7 @@ function get_active_connectors(): array {
 		return [];
 	}
 
-	return \WordPress\AI\get_ai_connectors( false );
+	return \WordPress\AI\get_ai_connectors( true );
 }
 
 /**
