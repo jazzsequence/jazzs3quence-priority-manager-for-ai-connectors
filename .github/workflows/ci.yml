@@ -97,10 +97,18 @@ jobs:
 
       - name: WordPress.org Plugin Check
         run: |
-          wp plugin check ai-connector-priority \
+          RESULTS=$(wp plugin check ai-connector-priority \
             --path=/tmp/wordpress \
             --exclude-directories=vendor,tests,bin,.github \
-            --exclude-files=.gitignore,.distignore,CLAUDE.md
+            --exclude-files=.gitignore,.distignore,CLAUDE.md \
+            --format=json)
+          echo "$RESULTS" | jq .
+          ERROR_COUNT=$(echo "$RESULTS" | jq '[to_entries[] | .value[] | select(.type == "ERROR")] | length')
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "Plugin check failed with $ERROR_COUNT error(s)."
+            exit 1
+          fi
+          echo "Plugin check passed."
 
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
