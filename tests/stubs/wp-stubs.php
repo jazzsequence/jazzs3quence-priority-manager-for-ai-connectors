@@ -29,7 +29,19 @@ if ( ! function_exists( 'apply_filters' ) ) {
 }
 
 if ( ! function_exists( 'get_ai_connectors' ) ) {
+	/**
+	 * Stub for get_ai_connectors().
+	 *
+	 * _test_ai_connectors     — installed connectors (plugin active, credentials may be absent)
+	 * _test_active_connectors — subset with credentials configured ($active_only = true)
+	 *
+	 * If _test_active_connectors is not set, $active_only falls back to the full list,
+	 * matching production behaviour where the distinction doesn't matter.
+	 */
 	function get_ai_connectors( bool $active_only = true ): array {
+		if ( $active_only && isset( $GLOBALS['_test_active_connectors'] ) ) {
+			return $GLOBALS['_test_active_connectors'];
+		}
 		return $GLOBALS['_test_ai_connectors'] ?? [];
 	}
 }

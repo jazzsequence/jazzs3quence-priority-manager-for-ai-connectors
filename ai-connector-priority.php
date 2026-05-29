@@ -24,11 +24,14 @@ const OPTION_KEY = 'ai_connector_priority';
 const PAGE_SLUG  = 'ai-connector-priority';
 
 /**
- * Returns active AI provider connectors from the WordPress AI plugin.
+ * Returns registered AI provider connectors from the WordPress AI plugin.
  *
- * Wraps get_ai_connectors(true) with a function_exists guard so the plugin
- * degrades gracefully when the AI plugin is not loaded. Each entry is keyed
- * by provider ID and contains at minimum a 'name' key.
+ * Uses get_ai_connectors(false) so that all connectors registered by active
+ * provider plugins are returned regardless of credential configuration. The AI
+ * plugin handles credential checks at API-call time; we only need to know which
+ * providers are installed so we can display them and reorder the model list.
+ *
+ * Returns an empty array when the AI plugin is not loaded.
  *
  * @return array<string, array{name: string}> Provider ID => connector data.
  */
@@ -37,7 +40,7 @@ function get_active_connectors(): array {
 		return [];
 	}
 
-	return get_ai_connectors( true );
+	return get_ai_connectors( false );
 }
 
 /**
