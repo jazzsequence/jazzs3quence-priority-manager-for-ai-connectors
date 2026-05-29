@@ -24,100 +24,201 @@ const OPTION_KEY = 'ai_connector_priority';
 const PAGE_SLUG  = 'ai-connector-priority';
 
 /**
- * Returns the available AI providers for a given task type.
+ * Returns registered AI provider connectors from the WordPress AI plugin.
  *
- * Anthropic is excluded from image generation as it does not support that capability.
+ * Uses WordPress\AI\get_ai_connectors(true) which filters via is_connector_plugin_active():
+ * for built-in providers (anthropic, google, openai) that checks is_plugin_active() on
+ * the provider plugin file; for custom providers (e.g. Vertex) that have no plugin file
+ * key, it returns true unconditionally — so any registered provider plugin is included.
  *
- * @param string $task Task type: 'text', 'image', or 'vision'.
- * @return array<string, string> Provider ID => display label.
+ * Returns an empty array when the AI plugin is not loaded.
+ *
+ * @return array<string, array{name: string}> Provider ID => connector data.
  */
-function get_providers_for_task( string $task ): array {
-	$all = [
-		'anthropic' => 'Anthropic (Claude)',
-		'google'    => 'Google (Gemini)',
-		'openai'    => 'OpenAI',
-	];
-
-	if ( 'image' === $task ) {
-		unset( $all['anthropic'] );
+function get_active_connectors(): array {
+	if ( ! function_exists( 'WordPress\AI\get_ai_connectors' ) ) {
+		return [];
 	}
 
-	return $all;
+	return \WordPress\AI\get_ai_connectors( true );
 }
 
 /**
- * Returns the ordered list of provider/model pairs for a given provider and task type.
+ * Returns active providers that appear in a task's model list, as ID => label pairs.
  *
- * Each entry is a two-element array of [provider_id, model_id] as expected by the
- * WordPress AI plugin's wpai_preferred_*_models filters.
+ * Derives which providers support the task by looking at which provider IDs appear
+ * in the incoming filter value for that task, then intersects with the active connectors.
  *
- * @param string $provider Provider ID: 'anthropic', 'google', or 'openai'.
- * @param string $task     Task type: 'text', 'image', or 'vision'.
- * @return array<int, array{0: string, 1: string}> Ordered list of [provider, model] pairs.
+ * @param string                                        $task   Task type: 'text', 'image', or 'vision'.
+ * @param array<int, array{0: string, 1: string}>|null $models Pre-fetched model list, or null to apply the filter.
+ * @return array<string, string> Provider ID => display label.
  */
-function get_models_for_provider( string $provider, string $task ): array {
-	$map = [
-		'text' => [
-			'anthropic' => [ [ 'anthropic', 'claude-sonnet-4-6' ] ],
-			'google'    => [ [ 'google', 'gemini-3-flash-preview' ], [ 'google', 'gemini-2.5-flash' ] ],
-			'openai'    => [ [ 'openai', 'gpt-5.4-mini' ], [ 'openai', 'gpt-4.1-mini' ] ],
-		],
-		'image' => [
-			'google' => [
-				[ 'google', 'gemini-3.1-flash-image-preview' ],
-				[ 'google', 'gemini-3-pro-image-preview' ],
-				[ 'google', 'gemini-2.5-flash-image' ],
-			],
-			'openai' => [ [ 'openai', 'gpt-image-2' ], [ 'openai', 'gpt-image-1.5' ] ],
-		],
-		'vision' => [
-			'anthropic' => [ [ 'anthropic', 'claude-sonnet-4-6' ] ],
-			'google'    => [ [ 'google', 'gemini-3-flash-preview' ], [ 'google', 'gemini-2.5-flash' ] ],
-			'openai'    => [ [ 'openai', 'gpt-5.4-mini' ], [ 'openai', 'gpt-4.1-mini' ] ],
-		],
-	];
+function get_providers_for_task( string $task, ?array $models = null ): array {
+	if ( null === $models ) {
+		$models = get_default_models_for_task( $task );
+	}
 
-	return $map[ $task ][ $provider ] ?? [];
+	$active = get_active_connectors();
+	$labels = [];
+
+	// Providers that appear in the model list, in model-list order.
+	foreach ( $models as [ $provider ] ) {
+		if ( isset( $active[ $provider ] ) && ! isset( $labels[ $provider ] ) ) {
+			$labels[ $provider ] = $active[ $provider ]['name'];
+		}
+	}
+
+	// Active connectors not yet in the default model list get appended.
+	foreach ( $active as $id => $connector ) {
+		if ( ! isset( $labels[ $id ] ) ) {
+			$labels[ $id ] = $connector['name'];
+		}
+	}
+
+	return $labels;
 }
 
 /**
- * Returns the saved provider priority order for all task types, merged with defaults.
- *
- * @return array{text: string[], image: string[], vision: string[]} Task type => ordered provider IDs.
- */
-function get_priorities(): array {
-	$defaults = [
-		'text'   => [ 'anthropic', 'google', 'openai' ],
-		'image'  => [ 'openai', 'google' ],
-		'vision' => [ 'anthropic', 'google', 'openai' ],
-	];
-
-	return wp_parse_args( get_option( OPTION_KEY, [] ), $defaults );
-}
-
-/**
- * Builds the ordered [provider, model] list for a task type based on saved priorities.
- *
- * Iterates the saved provider order and appends each provider's model list in sequence,
- * producing the array expected by wpai_preferred_*_models filters.
+ * Returns the AI plugin's default model list for a task by applying its filter
+ * without our own hook attached, so we see the baseline ordering.
  *
  * @param string $task Task type: 'text', 'image', or 'vision'.
- * @return array<int, array{0: string, 1: string}> Ordered list of [provider, model] pairs.
+ * @return array<int, array{0: string, 1: string}>
  */
-function build_model_list( string $task ): array {
-	$priorities = get_priorities();
-	$models     = [];
+function get_default_models_for_task( string $task ): array {
+	$map = [
+		'text'   => [ 'wpai_preferred_text_models', __NAMESPACE__ . '\reorder_models_for_text' ],
+		'image'  => [ 'wpai_preferred_image_models', __NAMESPACE__ . '\reorder_models_for_image' ],
+		'vision' => [ 'wpai_preferred_vision_models', __NAMESPACE__ . '\reorder_models_for_vision' ],
+	];
 
-	foreach ( $priorities[ $task ] as $provider ) {
-		$models = array_merge( $models, get_models_for_provider( $provider, $task ) );
+	if ( ! isset( $map[ $task ] ) ) {
+		return [];
+	}
+
+	[ $filter, $callback ] = $map[ $task ];
+	$priority              = has_filter( $filter, $callback );
+
+	if ( false !== $priority ) {
+		remove_filter( $filter, $callback, $priority );
+	}
+
+	/*
+	 * Call the AI plugin's helpers, not apply_filters() with [].
+	 * Defaults are passed as the second arg to apply_filters() inside those
+	 * functions; calling the filter directly with [] would bypass them.
+	 */
+	$models = match ( $task ) {
+		'text'   => function_exists( 'WordPress\AI\get_preferred_models_for_text_generation' )
+						? (array) \WordPress\AI\get_preferred_models_for_text_generation()
+						: [],
+		'image'  => function_exists( 'WordPress\AI\get_preferred_image_models' )
+						? (array) \WordPress\AI\get_preferred_image_models()
+						: [],
+		'vision' => function_exists( 'WordPress\AI\get_preferred_vision_models' )
+						? (array) \WordPress\AI\get_preferred_vision_models()
+						: [],
+	};
+
+	if ( false !== $priority ) {
+		add_filter( $filter, $callback );
 	}
 
 	return $models;
 }
 
-add_filter( 'wpai_preferred_text_models', static fn() => build_model_list( 'text' ) );
-add_filter( 'wpai_preferred_image_models', static fn() => build_model_list( 'image' ) );
-add_filter( 'wpai_preferred_vision_models', static fn() => build_model_list( 'vision' ) );
+/**
+ * Returns the saved provider priority order for all task types, merged with defaults.
+ *
+ * Defaults are derived from the active connectors visible in each task's model list,
+ * preserving the order the AI plugin provides them.
+ *
+ * @return array{text: string[], image: string[], vision: string[]} Task type => ordered provider IDs.
+ */
+function get_priorities(): array {
+	$defaults = [];
+
+	foreach ( [ 'text', 'image', 'vision' ] as $task ) {
+		$defaults[ $task ] = array_keys( get_providers_for_task( $task ) );
+	}
+
+	return wp_parse_args( get_option( OPTION_KEY, [] ), $defaults );
+}
+
+/**
+ * Reorders an incoming model list according to the saved provider priorities.
+ *
+ * Models for inactive providers are dropped. Models for active providers not
+ * in the saved priorities are appended at the end in their original order.
+ *
+ * @param array<int, array{0: string, 1: string}> $models Incoming [provider, model] pairs.
+ * @param string                                   $task   Task type: 'text', 'image', or 'vision'.
+ * @return array<int, array{0: string, 1: string}> Reordered list.
+ */
+function reorder_model_list( array $models, string $task ): array {
+	$active     = array_keys( get_active_connectors() );
+	$priorities = get_priorities()[ $task ];
+
+	// Group active models by provider, preserving per-provider order.
+	$by_provider = [];
+	foreach ( $models as $pair ) {
+		[ $provider ] = $pair;
+		if ( in_array( $provider, $active, true ) ) {
+			$by_provider[ $provider ][] = $pair;
+		}
+	}
+
+	// Assemble in priority order, then append any providers not yet prioritised.
+	$result = [];
+	foreach ( $priorities as $provider ) {
+		if ( isset( $by_provider[ $provider ] ) ) {
+			array_push( $result, ...$by_provider[ $provider ] );
+			unset( $by_provider[ $provider ] );
+		}
+	}
+	foreach ( $by_provider as $pairs ) {
+		array_push( $result, ...$pairs );
+	}
+
+	return $result;
+}
+
+// Named callbacks so get_default_models_for_task() can temporarily remove them.
+
+/**
+ * Filter callback for wpai_preferred_text_models.
+ *
+ * @param array<int, array{0: string, 1: string}> $models Incoming model list.
+ * @return array<int, array{0: string, 1: string}>
+ */
+function reorder_models_for_text( array $models ): array {
+	return reorder_model_list( $models, 'text' );
+}
+
+/**
+ * Filter callback for wpai_preferred_image_models.
+ *
+ * @param array<int, array{0: string, 1: string}> $models Incoming model list.
+ * @return array<int, array{0: string, 1: string}>
+ */
+function reorder_models_for_image( array $models ): array {
+	return reorder_model_list( $models, 'image' );
+}
+
+/**
+ * Filter callback for wpai_preferred_vision_models.
+ *
+ * @param array<int, array{0: string, 1: string}> $models Incoming model list.
+ * @return array<int, array{0: string, 1: string}>
+ */
+function reorder_models_for_vision( array $models ): array {
+	return reorder_model_list( $models, 'vision' );
+}
+
+add_filter( 'wpai_preferred_text_models', __NAMESPACE__ . '\reorder_models_for_text' );
+add_filter( 'wpai_preferred_image_models', __NAMESPACE__ . '\reorder_models_for_image' );
+add_filter( 'wpai_preferred_vision_models', __NAMESPACE__ . '\reorder_models_for_vision' );
+
 add_action(
 	'admin_menu',
 	static function (): void {
@@ -153,6 +254,7 @@ function render_page(): void {
 		$saved = save_priorities();
 	}
 
+	$active     = get_active_connectors();
 	$priorities = get_priorities();
 	$tasks      = [
 		'text'   => [
@@ -161,7 +263,7 @@ function render_page(): void {
 		],
 		'image'  => [
 			'label'       => __( 'Image Generation', 'ai-connector-priority' ),
-			'description' => __( 'Used for: featured image generation, inline image generation, image editing. Anthropic does not support image generation.', 'ai-connector-priority' ),
+			'description' => __( 'Used for: featured image generation, inline image generation, image editing.', 'ai-connector-priority' ),
 		],
 		'vision' => [
 			'label'       => __( 'Vision', 'ai-connector-priority' ),
@@ -171,33 +273,45 @@ function render_page(): void {
 	?>
 	<div class="wrap">
 		<h1><?php esc_html_e( 'AI Connector Priority', 'ai-connector-priority' ); ?></h1>
-		<p><?php esc_html_e( 'Set which provider to try first for each AI task type. Only providers with a configured API key in Settings → Connectors are used. If the first-choice provider is not registered, the next one is tried automatically.', 'ai-connector-priority' ); ?></p>
+		<p><?php esc_html_e( 'Set which provider to try first for each AI task type. Only active provider plugins are shown. If the first-choice provider fails, the next one is tried automatically.', 'ai-connector-priority' ); ?></p>
 
 		<?php if ( $saved ) : ?>
 			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Priority settings saved.', 'ai-connector-priority' ); ?></p></div>
 		<?php endif; ?>
 
+		<?php if ( empty( $active ) ) : ?>
+			<div class="notice notice-warning">
+				<p>
+					<?php esc_html_e( 'No AI provider plugins are active. Install and activate at least one provider plugin to configure priorities.', 'ai-connector-priority' ); ?>
+				</p>
+			</div>
+		<?php else : ?>
 		<form method="post">
 			<?php wp_nonce_field( 'cc_ai_priority_save', '_cc_ai_priority_nonce' ); ?>
 
 			<?php foreach ( $tasks as $task => $info ) : ?>
+				<?php
+				$providers = get_providers_for_task( $task );
+				if ( empty( $providers ) ) {
+					continue;
+				}
+				?>
 				<h2><?php echo esc_html( $info['label'] ); ?></h2>
 				<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
 
 				<table class="form-table" role="presentation">
 					<tbody>
 					<?php
-					$providers     = get_providers_for_task( $task );
 					$provider_keys = array_keys( $providers );
 					$current_order = $priorities[ $task ];
-					$labels        = [
+					$ordinals      = [
 						__( '1st choice', 'ai-connector-priority' ),
 						__( '2nd choice', 'ai-connector-priority' ),
 						__( '3rd choice', 'ai-connector-priority' ),
 					];
 
 					foreach ( $provider_keys as $position => $default_provider ) :
-						$label    = $labels[ $position ] ?? ( ( $position + 1 ) . 'th choice' );
+						$label    = $ordinals[ $position ] ?? ( ( $position + 1 ) . 'th choice' );
 						$selected = $current_order[ $position ] ?? $default_provider;
 						$field_id = "cc_ai_{$task}_{$position}";
 						?>
@@ -222,6 +336,7 @@ function render_page(): void {
 
 			<?php submit_button( __( 'Save Priority Settings', 'ai-connector-priority' ) ); ?>
 		</form>
+		<?php endif; ?>
 	</div>
 	<?php
 }
@@ -239,7 +354,7 @@ function save_priorities(): bool {
 
 	$clean = [];
 
-	foreach ( [ 'text', 'image', 'vision' ] as $task ) {
+	foreach ( array_keys( get_priorities() ) as $task ) {
 		if ( isset( $raw[ $task ] ) && is_array( $raw[ $task ] ) ) {
 			$valid          = array_keys( get_providers_for_task( $task ) );
 			$clean[ $task ] = sanitize_provider_order( array_values( $raw[ $task ] ), $valid );

@@ -16,15 +16,37 @@ Single-file WordPress plugin (`ai-connector-priority.php`) that overrides the Wo
 
 The plugin's data flow:
 
-1. `get_priorities()` reads `wp_options` key `ai_connector_priority` (constant `OPTION_KEY`), merging with hardcoded defaults.
-2. `build_model_list( $task )` walks the saved provider order and calls `get_models_for_provider( $provider, $task )` for each, producing an ordered `[provider_id, model_id]` array.
-3. Three `add_filter` calls attach `build_model_list()` results to `wpai_preferred_text_models`, `wpai_preferred_image_models`, and `wpai_preferred_vision_models`.
+1. `get_registered_providers()` returns the full provider registry via the `ai_connector_priority_providers` filter. Built-in definitions cover Anthropic, Google, and OpenAI; third parties add entries via that filter.
+2. `get_active_providers()` filters the registry to only providers whose `plugin` file passes `is_plugin_active()`. Providers added via filter without a `plugin` key are always considered active.
+3. `get_providers_for_task( $task )` returns active providers that declare support for the given task, as `id => label` pairs.
+4. `get_priorities()` reads `wp_options` key `ai_connector_priority` (constant `OPTION_KEY`), merging with defaults derived from the currently active providers.
+5. `build_model_list( $task )` walks the saved provider order, **skips any provider that is not currently active**, and calls `get_models_for_provider()` for each active one, producing an ordered `[provider_id, model_id]` array.
+6. Three `add_filter` calls attach `build_model_list()` results to `wpai_preferred_text_models`, `wpai_preferred_image_models`, and `wpai_preferred_vision_models`.
 
-The admin page (`render_page()`) handles both GET (display) and POST (save) in one function. Nonce verification happens before `save_priorities()` is called. `save_priorities()` always calls `sanitize_provider_order()` which deduplicates and ensures every valid provider appears exactly once in the saved array.
+The admin page (`render_page()`) handles both GET (display) and POST (save) in one function. It shows a warning notice when no provider plugins are active. Nonce verification happens before `save_priorities()` is called. `save_priorities()` validates submitted providers against `get_providers_for_task()` (active only) and calls `sanitize_provider_order()` which deduplicates and ensures every valid provider appears exactly once.
+
+### Extensibility: adding a custom provider
+
+Hook into `ai_connector_priority_providers` and append your provider definition:
+
+```php
+add_filter( 'ai_connector_priority_providers', function( array $providers ): array {
+    $providers['myprovider'] = [
+        'label'  => 'My Provider',
+        // omit 'plugin' to always treat as active, or set to 'slug/slug.php'
+        'tasks'  => [ 'text', 'vision' ],
+        'models' => [
+            'text'   => [ [ 'myprovider', 'model-id' ] ],
+            'vision' => [ [ 'myprovider', 'model-id' ] ],
+        ],
+    ];
+    return $providers;
+} );
+```
 
 ### Key constraint: Anthropic excluded from image tasks
 
-`get_providers_for_task()` removes `anthropic` from the provider list when `$task === 'image'`. This is intentional — Anthropic has no image-generation capability. The image task's `get_models_for_provider()` map also has no `anthropic` entry. Both must stay in sync if providers are ever added.
+Anthropic's entry in `get_registered_providers()` declares `'tasks' => [ 'text', 'vision' ]` — no `image`. This means `get_providers_for_task( 'image' )` never includes Anthropic. The constraint lives in the provider definition, not in conditional logic elsewhere.
 
 ### Fallback behavior
 

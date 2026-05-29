@@ -1,6 +1,6 @@
 <?php
 /**
- * Unit tests for provider and model lookup functions.
+ * Unit tests for connector discovery and provider-for-task lookup.
  */
 
 namespace AiConnectorPriority\Tests\Unit;
@@ -9,36 +9,107 @@ use PHPUnit\Framework\TestCase;
 
 class ProvidersTest extends TestCase {
 
+	protected function setUp(): void {
+		$GLOBALS['_test_ai_connectors'] = [
+			'anthropic' => [ 'name' => 'Anthropic (Claude)' ],
+			'google'    => [ 'name' => 'Google (Gemini)' ],
+			'openai'    => [ 'name' => 'OpenAI' ],
+		];
+	}
+
+	protected function tearDown(): void {
+		unset( $GLOBALS['_test_ai_connectors'] );
+		unset( $GLOBALS['_test_active_connectors'] );
+	}
+
+	// -------------------------------------------------------------------------
+	// get_active_connectors()
+	// -------------------------------------------------------------------------
+
+	public function test_returns_connectors_from_ai_plugin(): void {
+		$connectors = \AiConnectorPriority\get_active_connectors();
+
+		$this->assertArrayHasKey( 'anthropic', $connectors );
+		$this->assertArrayHasKey( 'google', $connectors );
+		$this->assertArrayHasKey( 'openai', $connectors );
+	}
+
+	public function test_returns_empty_when_no_connectors_registered(): void {
+		$GLOBALS['_test_ai_connectors'] = [];
+
+		$this->assertEmpty( \AiConnectorPriority\get_active_connectors() );
+	}
+
+	public function test_only_returns_connectors_whose_plugin_is_active(): void {
+		// get_ai_connectors(true) checks is_plugin_active() for built-in providers.
+		// _test_active_connectors simulates the subset whose plugin is actually active.
+		$GLOBALS['_test_ai_connectors']     = [
+			'anthropic' => [ 'name' => 'Anthropic (Claude)' ],
+			'google'    => [ 'name' => 'Google (Gemini)' ],
+			'openai'    => [ 'name' => 'OpenAI' ],
+		];
+		$GLOBALS['_test_active_connectors'] = [
+			'google' => [ 'name' => 'Google (Gemini)' ],
+		];
+
+		$connectors = \AiConnectorPriority\get_active_connectors();
+
+		$this->assertArrayHasKey( 'google', $connectors );
+		$this->assertArrayNotHasKey( 'anthropic', $connectors );
+		$this->assertArrayNotHasKey( 'openai', $connectors );
+	}
+
 	// -------------------------------------------------------------------------
 	// get_providers_for_task()
 	// -------------------------------------------------------------------------
 
-	public function test_text_task_includes_all_providers(): void {
-		$providers = \AiConnectorPriority\get_providers_for_task( 'text' );
+	public function test_providers_for_task_returns_active_providers_in_model_list(): void {
+		$models = [
+			[ 'anthropic', 'claude-sonnet-4-6' ],
+			[ 'google', 'gemini-flash' ],
+			[ 'openai', 'gpt-4' ],
+		];
+
+		$providers = \AiConnectorPriority\get_providers_for_task( 'text', $models );
 
 		$this->assertArrayHasKey( 'anthropic', $providers );
 		$this->assertArrayHasKey( 'google', $providers );
 		$this->assertArrayHasKey( 'openai', $providers );
 	}
 
-	public function test_image_task_excludes_anthropic(): void {
-		$providers = \AiConnectorPriority\get_providers_for_task( 'image' );
+	public function test_providers_for_task_excludes_inactive_connectors(): void {
+		$GLOBALS['_test_ai_connectors'] = [
+			'google' => [ 'name' => 'Google (Gemini)' ],
+		];
 
+		$models = [
+			[ 'anthropic', 'claude-sonnet-4-6' ],
+			[ 'google', 'gemini-flash' ],
+			[ 'openai', 'gpt-4' ],
+		];
+
+		$providers = \AiConnectorPriority\get_providers_for_task( 'text', $models );
+
+		$this->assertArrayHasKey( 'google', $providers );
 		$this->assertArrayNotHasKey( 'anthropic', $providers );
-		$this->assertArrayHasKey( 'google', $providers );
-		$this->assertArrayHasKey( 'openai', $providers );
+		$this->assertArrayNotHasKey( 'openai', $providers );
 	}
 
-	public function test_vision_task_includes_all_providers(): void {
-		$providers = \AiConnectorPriority\get_providers_for_task( 'vision' );
+	public function test_providers_for_task_returns_empty_when_no_connectors(): void {
+		$GLOBALS['_test_ai_connectors'] = [];
 
-		$this->assertArrayHasKey( 'anthropic', $providers );
-		$this->assertArrayHasKey( 'google', $providers );
-		$this->assertArrayHasKey( 'openai', $providers );
+		$models    = [ [ 'anthropic', 'claude-sonnet-4-6' ] ];
+		$providers = \AiConnectorPriority\get_providers_for_task( 'text', $models );
+
+		$this->assertEmpty( $providers );
 	}
 
 	public function test_providers_have_display_labels(): void {
-		$providers = \AiConnectorPriority\get_providers_for_task( 'text' );
+		$models    = [
+			[ 'anthropic', 'claude-sonnet-4-6' ],
+			[ 'google', 'gemini-flash' ],
+		];
+		$providers = \AiConnectorPriority\get_providers_for_task( 'text', $models );
 
 		foreach ( $providers as $label ) {
 			$this->assertIsString( $label );
@@ -46,66 +117,57 @@ class ProvidersTest extends TestCase {
 		}
 	}
 
-	// -------------------------------------------------------------------------
-	// get_models_for_provider()
-	// -------------------------------------------------------------------------
+	public function test_providers_for_task_returns_non_empty_when_ai_plugin_functions_exist(): void {
+		// get_providers_for_task() must return providers when called without an
+		// explicit model list — i.e. when it falls through to get_default_models_for_task()
+		// which calls the AI plugin's helper functions. If those functions don't exist
+		// (or if we call apply_filters with [] instead), providers would be empty and
+		// the admin UI shows nothing.
+		$providers = \AiConnectorPriority\get_providers_for_task( 'text' );
 
-	public function test_anthropic_text_models_are_anthropic_provider(): void {
-		$models = \AiConnectorPriority\get_models_for_provider( 'anthropic', 'text' );
-
-		$this->assertNotEmpty( $models );
-		foreach ( $models as $pair ) {
-			$this->assertSame( 'anthropic', $pair[0] );
-		}
+		$this->assertNotEmpty( $providers );
+		$this->assertArrayHasKey( 'anthropic', $providers );
+		$this->assertArrayHasKey( 'google', $providers );
+		$this->assertArrayHasKey( 'openai', $providers );
 	}
 
-	public function test_anthropic_image_models_is_empty(): void {
-		$models = \AiConnectorPriority\get_models_for_provider( 'anthropic', 'image' );
+	public function test_providers_for_image_task_excludes_providers_not_in_image_model_list(): void {
+		// Anthropic has no image models in the stub, so it should not appear for image task.
+		$providers = \AiConnectorPriority\get_providers_for_task( 'image' );
 
-		$this->assertEmpty( $models );
+		$this->assertNotEmpty( $providers );
+		$this->assertArrayNotHasKey( 'anthropic', $providers );
+		$this->assertArrayHasKey( 'google', $providers );
+		$this->assertArrayHasKey( 'openai', $providers );
 	}
 
-	public function test_anthropic_vision_models_are_anthropic_provider(): void {
-		$models = \AiConnectorPriority\get_models_for_provider( 'anthropic', 'vision' );
+	public function test_active_connector_not_in_model_list_still_appears_in_task(): void {
+		// A newly installed provider (e.g. DeepSeek) may be in get_active_connectors()
+		// but have no entries in the AI plugin's default model list yet. It must still
+		// appear in the UI so the user can set its priority.
+		$GLOBALS['_test_ai_connectors'] = [
+			'anthropic' => [ 'name' => 'Anthropic (Claude)' ],
+			'deepseek'  => [ 'name' => 'DeepSeek' ],
+		];
 
-		$this->assertNotEmpty( $models );
-		foreach ( $models as $pair ) {
-			$this->assertSame( 'anthropic', $pair[0] );
-		}
+		$models    = [ [ 'anthropic', 'claude-test' ] ]; // deepseek not in model list
+		$providers = \AiConnectorPriority\get_providers_for_task( 'text', $models );
+
+		$this->assertArrayHasKey( 'anthropic', $providers );
+		$this->assertArrayHasKey( 'deepseek', $providers );
 	}
 
-	public function test_google_image_models_are_google_provider(): void {
-		$models = \AiConnectorPriority\get_models_for_provider( 'google', 'image' );
+	public function test_each_provider_appears_once_regardless_of_model_count(): void {
+		$models = [
+			[ 'google', 'gemini-flash' ],
+			[ 'google', 'gemini-pro' ],
+			[ 'openai', 'gpt-4' ],
+		];
 
-		$this->assertNotEmpty( $models );
-		foreach ( $models as $pair ) {
-			$this->assertSame( 'google', $pair[0] );
-		}
-	}
+		$providers = \AiConnectorPriority\get_providers_for_task( 'text', $models );
 
-	public function test_openai_image_models_are_openai_provider(): void {
-		$models = \AiConnectorPriority\get_models_for_provider( 'openai', 'image' );
-
-		$this->assertNotEmpty( $models );
-		foreach ( $models as $pair ) {
-			$this->assertSame( 'openai', $pair[0] );
-		}
-	}
-
-	public function test_unknown_provider_returns_empty(): void {
-		$models = \AiConnectorPriority\get_models_for_provider( 'unknown', 'text' );
-
-		$this->assertEmpty( $models );
-	}
-
-	public function test_models_are_two_element_pairs(): void {
-		$models = \AiConnectorPriority\get_models_for_provider( 'google', 'text' );
-
-		$this->assertNotEmpty( $models );
-		foreach ( $models as $pair ) {
-			$this->assertCount( 2, $pair );
-			$this->assertIsString( $pair[0] );
-			$this->assertIsString( $pair[1] );
-		}
+		$this->assertCount( 2, $providers );
+		$this->assertArrayHasKey( 'google', $providers );
+		$this->assertArrayHasKey( 'openai', $providers );
 	}
 }
