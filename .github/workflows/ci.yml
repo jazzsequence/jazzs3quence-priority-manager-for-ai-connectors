@@ -61,11 +61,12 @@ jobs:
         uses: godaddy-wordpress/setup-wp-cli@1
 
       - name: Download WordPress
-        run: wp core download --version=latest
+        run: wp core download --version=latest --path=/tmp/wordpress
 
       - name: Configure WordPress
         run: |
           wp config create \
+            --path=/tmp/wordpress \
             --dbname=wordpress_test \
             --dbuser=root \
             --dbpass= \
@@ -74,6 +75,7 @@ jobs:
       - name: Install WordPress
         run: |
           wp core install \
+            --path=/tmp/wordpress \
             --url=localhost \
             --title=Test \
             --admin_user=admin \
@@ -82,7 +84,7 @@ jobs:
             --skip-email
 
       - name: Setup Plugins
-        run: wp plugin install ai plugin-check --activate
+        run: wp plugin install ai plugin-check --activate --path=/tmp/wordpress
 
       - name: Copy this plugin
         run: |
@@ -91,14 +93,14 @@ jobs:
             --exclude='vendor' \
             --exclude='tests' \
             --exclude='bin' \
-            --exclude='wp-content' \
-            . wp-content/plugins/ai-connector-priority/
+            . /tmp/wordpress/wp-content/plugins/ai-connector-priority/
 
       - name: WordPress.org Plugin Check
         run: |
           wp plugin check ai-connector-priority \
+            --path=/tmp/wordpress \
             --exclude-directories=vendor,tests,bin \
-            --require=./wp-content/plugins/plugin-check/cli.php
+            --require=/tmp/wordpress/wp-content/plugins/plugin-check/cli.php
 
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
