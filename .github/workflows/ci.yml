@@ -31,6 +31,105 @@ jobs:
       - name: Run PHPCS
         run: composer lint
 
+  wordpress-plugin-checks:
+    name: WordPress.org Plugin Checks
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli
+          coverage: none
+
+      - name: Install WP-CLI
+        uses: godaddy-wordpress/setup-wp-cli@1
+
+      - name: Download WordPress
+        run: wp core download --version=latest --path=/tmp/wordpress
+
+      - name: Configure WordPress
+        run: |
+          wp config create \
+            --path=/tmp/wordpress \
+            --dbname=wordpress_test \
+            --dbuser=root \
+            --dbpass= \
+            --dbhost=127.0.0.1
+
+      - name: Install WordPress
+        run: |
+          wp core install \
+            --path=/tmp/wordpress \
+            --url=localhost \
+            --title=Test \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=test@example.com \
+            --skip-email
+
+      - name: Setup Plugins
+        run: wp plugin install ai plugin-check --activate --path=/tmp/wordpress
+
+      - name: Copy this plugin
+        run: |
+          rsync -a \
+            --exclude='.git' \
+            --exclude='vendor' \
+            --exclude='tests' \
+            --exclude='bin' \
+            . /tmp/wordpress/wp-content/plugins/ai-connector-priority/
+
+      - name: WordPress.org Plugin Check
+        run: |
+          RESULTS=$(wp plugin check ai-connector-priority \
+            --path=/tmp/wordpress \
+            --exclude-directories=vendor,tests,bin,.github \
+            --exclude-files=.gitignore,.distignore,CLAUDE.md \
+            --format=json 2>/dev/null)
+
+          # No findings: wp plugin check outputs a plain success message, not JSON.
+          if echo "$RESULTS" | grep -q "^Success:"; then
+            echo "Plugin check passed."
+            exit 0
+          fi
+
+          # Findings present: should be JSON. Bail loudly if not.
+          if ! echo "$RESULTS" | jq . > /dev/null 2>&1; then
+            echo "Plugin check returned unexpected output:"
+            echo "$RESULTS"
+            exit 1
+          fi
+
+          ISSUE_COUNT=$(echo "$RESULTS" | jq '[to_entries[] | .value[] | select(.type == "ERROR" or .type == "WARNING")] | length')
+          if [ "$ISSUE_COUNT" -gt 0 ]; then
+            echo "Plugin check failed with $ISSUE_COUNT error(s)/warning(s):"
+            echo "$RESULTS" | jq -r '
+              to_entries[] |
+              .key as $file |
+              .value[] |
+              select(.type == "ERROR" or .type == "WARNING") |
+              "[\(.type)] \($file) line \(.line): \(.code) — \(.message)"
+            '
+            exit 1
+          fi
+          echo "Plugin check passed."
+
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest

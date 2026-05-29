@@ -16,6 +16,10 @@
 
 namespace AiConnectorPriority;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 const OPTION_KEY = 'ai_connector_priority';
 const PAGE_SLUG  = 'ai-connector-priority';
 
