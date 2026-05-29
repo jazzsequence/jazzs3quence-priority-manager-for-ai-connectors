@@ -4,7 +4,7 @@ Tags: ai, llm, connectors, providers, priority
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -47,6 +47,11 @@ The fallback only applies at model selection time (whether the provider plugin i
 Developer Mode (Settings → AI → Developer Mode) sets a specific provider and model per feature and takes precedence over this plugin's priority list.
 
 == Changelog ==
+
+= 1.1.0 =
+* Provider discovery is now fully dynamic — any installed AI provider plugin is detected automatically via the WordPress connector registry, including third-party providers not bundled with the AI plugin
+* Only providers whose plugin is actually active are shown in the settings UI; a notice is displayed when no provider plugins are active
+* The plugin no longer hard-codes Anthropic, Google, and OpenAI — any registered connector (e.g. DeepSeek, Vertex) appears in the priority list automatically
 
 = 1.0.0 =
 * Initial release
