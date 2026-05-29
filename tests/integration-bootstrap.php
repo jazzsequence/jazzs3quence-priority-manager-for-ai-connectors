@@ -23,5 +23,45 @@ function aicp_manually_load_plugin(): void {
 }
 tests_add_filter( 'muplugins_loaded', 'aicp_manually_load_plugin' );
 
+// Stub the WordPress AI plugin's connector function — it is not installed in
+// the integration test environment.
+if ( ! function_exists( 'get_ai_connectors' ) ) {
+	function get_ai_connectors( bool $active_only = true ): array {
+		return [
+			'anthropic' => [ 'name' => 'Anthropic (Claude)' ],
+			'google'    => [ 'name' => 'Google (Gemini)' ],
+			'openai'    => [ 'name' => 'OpenAI' ],
+		];
+	}
+}
+
+// Provide baseline model lists at priority 5, simulating what the WordPress AI
+// plugin would add before our plugin reorders them at priority 10.
+tests_add_filter(
+	'wpai_preferred_text_models',
+	static fn() => [
+		[ 'anthropic', 'claude-test' ],
+		[ 'google', 'gemini-test' ],
+		[ 'openai', 'gpt-test' ],
+	],
+	5
+);
+tests_add_filter(
+	'wpai_preferred_image_models',
+	static fn() => [
+		[ 'google', 'gemini-image-test' ],
+		[ 'openai', 'gpt-image-test' ],
+	],
+	5
+);
+tests_add_filter(
+	'wpai_preferred_vision_models',
+	static fn() => [
+		[ 'anthropic', 'claude-test' ],
+		[ 'google', 'gemini-test' ],
+		[ 'openai', 'gpt-test' ],
+	],
+	5
+);
 
 require $_tests_dir . '/includes/bootstrap.php';
