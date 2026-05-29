@@ -103,9 +103,9 @@ jobs:
             --exclude-files=.gitignore,.distignore,CLAUDE.md \
             --format=json)
           echo "$RESULTS" | jq .
-          ERROR_COUNT=$(echo "$RESULTS" | jq '[to_entries[] | .value[] | select(.type == "ERROR")] | length')
-          if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "Plugin check failed with $ERROR_COUNT error(s)."
+          ISSUE_COUNT=$(echo "$RESULTS" | jq '[to_entries[] | .value[] | select(.type == "ERROR" or .type == "WARNING")] | length')
+          if [ "$ISSUE_COUNT" -gt 0 ]; then
+            echo "Plugin check failed with $ISSUE_COUNT error(s)/warning(s)."
             exit 1
           fi
           echo "Plugin check passed."
