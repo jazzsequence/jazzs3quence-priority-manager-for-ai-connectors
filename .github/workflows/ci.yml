@@ -109,23 +109,29 @@ jobs:
             exit 0
           fi
 
-          # Findings present: should be JSON. Bail loudly if not.
-          if ! echo "$RESULTS" | jq . > /dev/null 2>&1; then
-            echo "Plugin check returned unexpected output:"
-            echo "$RESULTS"
-            exit 1
-          fi
+          # Output format is "FILE: path\n[{json}]" per file — parse line by line.
+          HAS_ISSUES=0
+          CURRENT_FILE=""
+          while IFS= read -r line; do
+            if [[ "$line" == FILE:* ]]; then
+              CURRENT_FILE="${line#FILE: }"
+            elif [[ "$line" == \[* ]]; then
+              ISSUES=$(echo "$line" | jq -r '
+                .[] | select(.type == "ERROR" or .type == "WARNING") |
+                "  [\(.type)] line \(.line): \(.code)\n    \(.message | gsub("&quot;"; "\""))"
+              ' 2>/dev/null)
+              if [ -n "$ISSUES" ]; then
+                echo ""
+                echo "FILE: $CURRENT_FILE"
+                echo "$ISSUES"
+                HAS_ISSUES=1
+              fi
+            fi
+          done <<< "$RESULTS"
 
-          ISSUE_COUNT=$(echo "$RESULTS" | jq '[to_entries[] | .value[] | select(.type == "ERROR" or .type == "WARNING")] | length')
-          if [ "$ISSUE_COUNT" -gt 0 ]; then
-            echo "Plugin check failed with $ISSUE_COUNT error(s)/warning(s):"
-            echo "$RESULTS" | jq -r '
-              to_entries[] |
-              .key as $file |
-              .value[] |
-              select(.type == "ERROR" or .type == "WARNING") |
-              "[\(.type)] \($file) line \(.line): \(.code) — \(.message)"
-            '
+          if [ "$HAS_ISSUES" -eq 1 ]; then
+            echo ""
+            echo "Plugin check failed."
             exit 1
           fi
           echo "Plugin check passed."

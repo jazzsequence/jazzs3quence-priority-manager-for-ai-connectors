@@ -75,16 +75,29 @@ function get_providers_for_task( string $task, ?array $models = null ): array {
  * @return array<int, array{0: string, 1: string}>
  */
 function get_default_models_for_task( string $task ): array {
-	$filter    = "wpai_preferred_{$task}_models";
-	$callback  = __NAMESPACE__ . "\\reorder_models_for_{$task}";
+	$map = [
+		'text'   => [ 'wpai_preferred_text_models', __NAMESPACE__ . '\reorder_models_for_text' ],
+		'image'  => [ 'wpai_preferred_image_models', __NAMESPACE__ . '\reorder_models_for_image' ],
+		'vision' => [ 'wpai_preferred_vision_models', __NAMESPACE__ . '\reorder_models_for_vision' ],
+	];
 
-	$priority = has_filter( $filter, $callback );
+	if ( ! isset( $map[ $task ] ) ) {
+		return [];
+	}
+
+	[ $filter, $callback ] = $map[ $task ];
+	$priority              = has_filter( $filter, $callback );
 
 	if ( false !== $priority ) {
 		remove_filter( $filter, $callback, $priority );
 	}
 
-	$models = (array) apply_filters( $filter, [] );
+	// String literals required here to satisfy PrefixAllGlobals.DynamicHooknameFound.
+	$models = match ( $task ) {
+		'text'   => (array) apply_filters( 'wpai_preferred_text_models', [] ),
+		'image'  => (array) apply_filters( 'wpai_preferred_image_models', [] ),
+		'vision' => (array) apply_filters( 'wpai_preferred_vision_models', [] ),
+	};
 
 	if ( false !== $priority ) {
 		add_filter( $filter, $callback );
