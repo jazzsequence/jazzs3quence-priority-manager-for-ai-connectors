@@ -58,12 +58,20 @@ function get_providers_for_task( string $task, ?array $models = null ): array {
 		$models = get_default_models_for_task( $task );
 	}
 
-	$active  = get_active_connectors();
-	$labels  = [];
+	$active = get_active_connectors();
+	$labels = [];
 
+	// Providers that appear in the model list, in model-list order.
 	foreach ( $models as [ $provider ] ) {
 		if ( isset( $active[ $provider ] ) && ! isset( $labels[ $provider ] ) ) {
 			$labels[ $provider ] = $active[ $provider ]['name'];
+		}
+	}
+
+	// Active connectors not yet in the default model list get appended.
+	foreach ( $active as $id => $connector ) {
+		if ( ! isset( $labels[ $id ] ) ) {
+			$labels[ $id ] = $connector['name'];
 		}
 	}
 
