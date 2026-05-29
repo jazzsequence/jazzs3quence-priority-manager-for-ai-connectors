@@ -101,7 +101,14 @@ jobs:
             --path=/tmp/wordpress \
             --exclude-directories=vendor,tests,bin,.github \
             --exclude-files=.gitignore,.distignore,CLAUDE.md \
-            --format=json)
+            --format=json 2>/dev/null)
+
+          if ! echo "$RESULTS" | jq . > /dev/null 2>&1; then
+            echo "Plugin check returned non-JSON output:"
+            echo "$RESULTS"
+            exit 1
+          fi
+
           echo "$RESULTS" | jq .
           ISSUE_COUNT=$(echo "$RESULTS" | jq '[to_entries[] | .value[] | select(.type == "ERROR" or .type == "WARNING")] | length')
           if [ "$ISSUE_COUNT" -gt 0 ]; then
