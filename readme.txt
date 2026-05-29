@@ -16,16 +16,16 @@ When you have multiple AI providers connected via Settings → Connectors, WordP
 
 Go to **Settings → AI Priority** to set your preferred provider order for:
 
-* **Text generation** — title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions
-* **Image generation** — featured image, inline image generation, image editing
+* **Text generation** — title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, comment moderation
+* **Image generation** — featured image generation, inline image generation
 * **Vision** — alt text generation, image analysis
 
 Requires the [AI plugin](https://wordpress.org/plugins/ai/) and at least one active AI provider plugin.
 
 == Installation ==
 
-1. Upload `ai-connector-priority.php` to `/wp-content/mu-plugins/`, or install the plugin through the WordPress plugins screen
-2. If installed as a regular plugin, activate it through the Plugins screen
+1. Install the plugin through the WordPress plugins screen, or upload the plugin folder to `/wp-content/plugins/`
+2. Activate the plugin through the Plugins screen
 3. Go to **Settings → AI Priority** to configure your provider preferences
 
 == Frequently Asked Questions ==
@@ -36,7 +36,7 @@ No — this plugin hooks into the AI plugin's `wpai_preferred_*_models` filters.
 
 = What happens if my first-choice provider isn't installed? =
 
-The AI plugin automatically falls through to the next provider in your list at model selection time.
+This plugin removes inactive providers from the priority list before passing it to the AI plugin, so the AI plugin only ever sees providers that are currently active. The next active provider in your list becomes the effective first choice automatically.
 
 = What if a model's API call fails at runtime? =
 

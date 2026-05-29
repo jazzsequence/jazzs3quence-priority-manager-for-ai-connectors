@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       AI Connector Priority
  * Plugin URI:        https://github.com/jazzsequence/ai-connector-priority
- * Description:       Admin settings page to configure which AI provider is tried first for each task type (text, image, vision). Requires the WordPress AI plugin (wordpress.org/plugins/ai).
+ * Description:       Configure which AI provider is tried first for each task type (text, image, vision). Requires the WordPress AI plugin (wordpress.org/plugins/ai) and at least one active provider plugin.
  * Version:           1.1.0
  * Requires at least: 7.0
  * Requires PHP:      8.2
