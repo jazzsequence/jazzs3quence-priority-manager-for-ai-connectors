@@ -99,8 +99,8 @@ jobs:
         run: |
           wp plugin check ai-connector-priority \
             --path=/tmp/wordpress \
-            --exclude-directories=vendor,tests,bin \
-            --require=/tmp/wordpress/wp-content/plugins/plugin-check/cli.php
+            --exclude-directories=vendor,tests,bin,.github \
+            --exclude-files=.gitignore,.distignore,CLAUDE.md
 
   unit-tests:
     name: Unit tests (PHP ${{ matrix.php }})
