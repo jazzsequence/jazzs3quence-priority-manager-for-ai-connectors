@@ -34,14 +34,52 @@ jobs:
   wordpress-plugin-checks:
     name: WordPress.org Plugin Checks
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli
+          coverage: none
 
       - name: Install WP-CLI
         uses: godaddy-wordpress/setup-wp-cli@1
 
       - name: Download WordPress
         run: wp core download --version=latest
+
+      - name: Configure WordPress
+        run: |
+          wp config create \
+            --dbname=wordpress_test \
+            --dbuser=root \
+            --dbpass= \
+            --dbhost=127.0.0.1
+
+      - name: Install WordPress
+        run: |
+          wp core install \
+            --url=localhost \
+            --title=Test \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=test@example.com \
+            --skip-email
 
       - name: Setup Plugins
         run: wp plugin install ai plugin-check --activate
