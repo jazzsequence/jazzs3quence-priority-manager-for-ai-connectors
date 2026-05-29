@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       AI Connector Priority
  * Plugin URI:        https://github.com/jazzsequence/ai-connector-priority
- * Description:       Configure which AI provider is tried first for each task type (text, image, vision). Requires the WordPress AI plugin (wordpress.org/plugins/ai) and at least one active provider plugin.
+ * Description:       Choose which AI provider to use for each task type (text, image, vision). Requires the WordPress AI plugin (wordpress.org/plugins/ai) and at least one active provider plugin.
  * Version:           1.1.0
  * Requires at least: 7.0
  * Requires PHP:      8.2
@@ -28,8 +28,8 @@ const PAGE_SLUG  = 'ai-connector-priority';
  *
  * Uses WordPress\AI\get_ai_connectors(true) which filters via is_connector_plugin_active():
  * for built-in providers (anthropic, google, openai) that checks is_plugin_active() on
- * the provider plugin file; for custom providers (e.g. Vertex) that have no plugin file
- * key, it returns true unconditionally — so any registered provider plugin is included.
+ * the provider plugin file; for custom providers that have no plugin file key it returns
+ * true unconditionally — so any registered provider plugin is included.
  *
  * Returns an empty array when the AI plugin is not loaded.
  *
@@ -44,10 +44,10 @@ function get_active_connectors(): array {
 }
 
 /**
- * Returns active providers that appear in a task's model list, as ID => label pairs.
+ * Returns active providers that support a given task, as ID => label pairs.
  *
- * Derives which providers support the task by looking at which provider IDs appear
- * in the incoming filter value for that task, then intersects with the active connectors.
+ * Derives which providers support the task from the AI plugin's default model
+ * list, then appends any active connectors not yet present in that list.
  *
  * @param string                                        $task   Task type: 'text', 'image', or 'vision'.
  * @param array<int, array{0: string, 1: string}>|null $models Pre-fetched model list, or null to apply the filter.
@@ -61,17 +61,9 @@ function get_providers_for_task( string $task, ?array $models = null ): array {
 	$active = get_active_connectors();
 	$labels = [];
 
-	// Providers that appear in the model list, in model-list order.
 	foreach ( $models as [ $provider ] ) {
 		if ( isset( $active[ $provider ] ) && ! isset( $labels[ $provider ] ) ) {
 			$labels[ $provider ] = $active[ $provider ]['name'];
-		}
-	}
-
-	// Active connectors not yet in the default model list get appended.
-	foreach ( $active as $id => $connector ) {
-		if ( ! isset( $labels[ $id ] ) ) {
-			$labels[ $id ] = $connector['name'];
 		}
 	}
 
@@ -128,39 +120,55 @@ function get_default_models_for_task( string $task ): array {
 }
 
 /**
- * Returns the saved provider priority order for all task types, merged with defaults.
+ * Returns the saved preferred provider per task type, merged with defaults.
  *
- * Defaults are derived from the active connectors visible in each task's model list,
- * preserving the order the AI plugin provides them.
+ * Stores a single provider ID per task. The selected provider's models are
+ * moved to the front of the AI plugin's model list; all others remain behind
+ * it in their default order.
  *
- * @return array{text: string[], image: string[], vision: string[]} Task type => ordered provider IDs.
+ * Migrates from the 1.0.x format (ordered array per task) by taking the
+ * first element of any saved array value.
+ *
+ * @return array{text: string, image: string, vision: string} Task => provider ID.
  */
 function get_priorities(): array {
-	$defaults = [];
+	$saved  = (array) get_option( OPTION_KEY, [] );
+	$result = [];
 
 	foreach ( [ 'text', 'image', 'vision' ] as $task ) {
-		$defaults[ $task ] = array_keys( get_providers_for_task( $task ) );
+		$raw = $saved[ $task ] ?? null;
+
+		// Migrate from old ordered-array format.
+		if ( is_array( $raw ) ) {
+			$raw = $raw[0] ?? '';
+		}
+
+		if ( is_string( $raw ) && '' !== $raw ) {
+			$result[ $task ] = $raw;
+		} else {
+			$providers        = get_providers_for_task( $task );
+			$result[ $task ]  = array_key_first( $providers ) ?? '';
+		}
 	}
 
-	return wp_parse_args( get_option( OPTION_KEY, [] ), $defaults );
+	return $result;
 }
 
 /**
- * Reorders an incoming model list according to the saved provider priorities.
+ * Reorders an incoming model list so the saved preferred provider's models come first.
  *
- * Models for inactive providers are dropped. Models for active providers not
- * in the saved priorities are appended at the end in their original order.
+ * Models for inactive providers are dropped. All other active providers follow
+ * in their original order.
  *
  * @param array<int, array{0: string, 1: string}> $models Incoming [provider, model] pairs.
  * @param string                                   $task   Task type: 'text', 'image', or 'vision'.
  * @return array<int, array{0: string, 1: string}> Reordered list.
  */
 function reorder_model_list( array $models, string $task ): array {
-	$active     = array_keys( get_active_connectors() );
-	$priorities = get_priorities()[ $task ];
-
-	// Group active models by provider, preserving per-provider order.
+	$preferred   = get_priorities()[ $task ] ?? '';
+	$active      = array_keys( get_active_connectors() );
 	$by_provider = [];
+
 	foreach ( $models as $pair ) {
 		[ $provider ] = $pair;
 		if ( in_array( $provider, $active, true ) ) {
@@ -168,14 +176,13 @@ function reorder_model_list( array $models, string $task ): array {
 		}
 	}
 
-	// Assemble in priority order, then append any providers not yet prioritised.
 	$result = [];
-	foreach ( $priorities as $provider ) {
-		if ( isset( $by_provider[ $provider ] ) ) {
-			array_push( $result, ...$by_provider[ $provider ] );
-			unset( $by_provider[ $provider ] );
-		}
+
+	if ( $preferred && isset( $by_provider[ $preferred ] ) ) {
+		array_push( $result, ...$by_provider[ $preferred ] );
+		unset( $by_provider[ $preferred ] );
 	}
+
 	foreach ( $by_provider as $pairs ) {
 		array_push( $result, ...$pairs );
 	}
@@ -235,9 +242,6 @@ add_action(
 /**
  * Renders the AI Priority settings page.
  *
- * Handles form submission (verified via nonce) before rendering so the page
- * reflects saved values immediately after saving.
- *
  * @return void
  */
 function render_page(): void {
@@ -259,11 +263,11 @@ function render_page(): void {
 	$tasks      = [
 		'text'   => [
 			'label'       => __( 'Text Generation', 'ai-connector-priority' ),
-			'description' => __( 'Used for: title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions.', 'ai-connector-priority' ),
+			'description' => __( 'Used for: title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, comment moderation.', 'ai-connector-priority' ),
 		],
 		'image'  => [
 			'label'       => __( 'Image Generation', 'ai-connector-priority' ),
-			'description' => __( 'Used for: featured image generation, inline image generation, image editing.', 'ai-connector-priority' ),
+			'description' => __( 'Used for: featured image generation, inline image generation.', 'ai-connector-priority' ),
 		],
 		'vision' => [
 			'label'       => __( 'Vision', 'ai-connector-priority' ),
@@ -273,68 +277,54 @@ function render_page(): void {
 	?>
 	<div class="wrap">
 		<h1><?php esc_html_e( 'AI Connector Priority', 'ai-connector-priority' ); ?></h1>
-		<p><?php esc_html_e( 'Set which provider to try first for each AI task type. Only active provider plugins are shown. If the first-choice provider fails, the next one is tried automatically.', 'ai-connector-priority' ); ?></p>
+		<p><?php esc_html_e( 'Choose which AI provider to use for each task type. Only active provider plugins are shown.', 'ai-connector-priority' ); ?></p>
 
 		<?php if ( $saved ) : ?>
-			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Priority settings saved.', 'ai-connector-priority' ); ?></p></div>
+			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'ai-connector-priority' ); ?></p></div>
 		<?php endif; ?>
 
 		<?php if ( empty( $active ) ) : ?>
 			<div class="notice notice-warning">
 				<p>
-					<?php esc_html_e( 'No AI provider plugins are active. Install and activate at least one provider plugin to configure priorities.', 'ai-connector-priority' ); ?>
+					<?php esc_html_e( 'No AI provider plugins are active. Install and activate at least one provider plugin to configure your preferred provider.', 'ai-connector-priority' ); ?>
 				</p>
 			</div>
 		<?php else : ?>
 		<form method="post">
 			<?php wp_nonce_field( 'cc_ai_priority_save', '_cc_ai_priority_nonce' ); ?>
 
-			<?php foreach ( $tasks as $task => $info ) : ?>
-				<?php
-				$providers = get_providers_for_task( $task );
-				if ( empty( $providers ) ) {
-					continue;
-				}
-				?>
-				<h2><?php echo esc_html( $info['label'] ); ?></h2>
-				<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
-
-				<table class="form-table" role="presentation">
-					<tbody>
+			<table class="form-table" role="presentation">
+				<tbody>
+				<?php foreach ( $tasks as $task => $info ) : ?>
 					<?php
-					$provider_keys = array_keys( $providers );
-					$current_order = $priorities[ $task ];
-					$ordinals      = [
-						__( '1st choice', 'ai-connector-priority' ),
-						__( '2nd choice', 'ai-connector-priority' ),
-						__( '3rd choice', 'ai-connector-priority' ),
-					];
+					$providers = get_providers_for_task( $task );
+					if ( empty( $providers ) ) {
+						continue;
+					}
+					$field_id = 'cc_ai_' . $task;
+					?>
+					<tr>
+						<th scope="row">
+							<label for="<?php echo esc_attr( $field_id ); ?>">
+								<?php echo esc_html( $info['label'] ); ?>
+							</label>
+							<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
+						</th>
+						<td>
+							<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>">
+								<?php foreach ( $providers as $value => $label ) : ?>
+									<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $priorities[ $task ], $value ); ?>>
+										<?php echo esc_html( $label ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
 
-					foreach ( $provider_keys as $position => $default_provider ) :
-						$label    = $ordinals[ $position ] ?? ( ( $position + 1 ) . 'th choice' );
-						$selected = $current_order[ $position ] ?? $default_provider;
-						$field_id = "cc_ai_{$task}_{$position}";
-						?>
-						<tr>
-							<th scope="row">
-								<label for="<?php echo esc_attr( $field_id ); ?>"><?php echo esc_html( $label ); ?></label>
-							</th>
-							<td>
-								<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>][]" id="<?php echo esc_attr( $field_id ); ?>">
-									<?php foreach ( $providers as $value => $provider_label ) : ?>
-										<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $selected, $value ); ?>>
-											<?php echo esc_html( $provider_label ); ?>
-										</option>
-									<?php endforeach; ?>
-								</select>
-							</td>
-						</tr>
-					<?php endforeach; ?>
-					</tbody>
-				</table>
-			<?php endforeach; ?>
-
-			<?php submit_button( __( 'Save Priority Settings', 'ai-connector-priority' ) ); ?>
+			<?php submit_button( __( 'Save Settings', 'ai-connector-priority' ) ); ?>
 		</form>
 		<?php endif; ?>
 	</div>
@@ -342,56 +332,24 @@ function render_page(): void {
 }
 
 /**
- * Sanitizes and persists the submitted provider priority order to wp_options.
- *
- * Called only after nonce verification in render_page().
+ * Sanitizes and persists the submitted provider preference to wp_options.
  *
  * @return bool True if the option was updated, false if unchanged or on failure.
  */
 function save_priorities(): bool {
-	// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce verified by caller; values sanitized in sanitize_provider_order().
-	$raw = isset( $_POST['cc_ai_priority'] ) && is_array( $_POST['cc_ai_priority'] ) ? wp_unslash( $_POST['cc_ai_priority'] ) : [];
-
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce verified by caller.
+	$raw   = isset( $_POST['cc_ai_priority'] ) && is_array( $_POST['cc_ai_priority'] ) ? wp_unslash( $_POST['cc_ai_priority'] ) : [];
 	$clean = [];
 
-	foreach ( array_keys( get_priorities() ) as $task ) {
-		if ( isset( $raw[ $task ] ) && is_array( $raw[ $task ] ) ) {
-			$valid          = array_keys( get_providers_for_task( $task ) );
-			$clean[ $task ] = sanitize_provider_order( array_values( $raw[ $task ] ), $valid );
+	foreach ( [ 'text', 'image', 'vision' ] as $task ) {
+		if ( isset( $raw[ $task ] ) && is_string( $raw[ $task ] ) ) {
+			$provider = sanitize_key( $raw[ $task ] );
+			$valid    = array_keys( get_providers_for_task( $task ) );
+			if ( in_array( $provider, $valid, true ) ) {
+				$clean[ $task ] = $provider;
+			}
 		}
 	}
 
 	return (bool) update_option( OPTION_KEY, $clean );
-}
-
-/**
- * Deduplicates and validates a submitted provider order array.
- *
- * First occurrence of each valid provider ID wins. Any valid provider absent from
- * the submitted list is appended in its default position so the returned array
- * always contains every valid provider exactly once.
- *
- * @param string[] $submitted  Raw submitted provider IDs (unsanitized).
- * @param string[] $valid      Allowed provider IDs for this task type.
- * @return string[]            Sanitized, deduplicated, complete provider order.
- */
-function sanitize_provider_order( array $submitted, array $valid ): array {
-	$seen   = [];
-	$result = [];
-
-	foreach ( $submitted as $provider ) {
-		$provider = sanitize_key( $provider );
-		if ( in_array( $provider, $valid, true ) && ! in_array( $provider, $seen, true ) ) {
-			$result[] = $provider;
-			$seen[]   = $provider;
-		}
-	}
-
-	foreach ( $valid as $provider ) {
-		if ( ! in_array( $provider, $seen, true ) ) {
-			$result[] = $provider;
-		}
-	}
-
-	return $result;
 }

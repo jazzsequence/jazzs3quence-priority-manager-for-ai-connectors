@@ -60,6 +60,10 @@ namespace WordPress\AI {
 
 namespace {
 
+	if ( ! defined( 'ABSPATH' ) ) {
+		define( 'ABSPATH', '/' );
+	}
+
 	if ( ! function_exists( 'add_filter' ) ) {
 		function add_filter(): void {}
 	}

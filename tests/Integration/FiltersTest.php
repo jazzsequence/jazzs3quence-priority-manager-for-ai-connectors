@@ -64,19 +64,19 @@ class FiltersTest extends \WP_UnitTestCase {
 		update_option(
 			\AiConnectorPriority\OPTION_KEY,
 			[
-				'text'   => [ 'openai', 'anthropic', 'google' ],
-				'image'  => [ 'google', 'openai' ],
-				'vision' => [ 'openai', 'anthropic', 'google' ],
+				'text'   => 'openai',
+				'image'  => 'google',
+				'vision' => 'openai',
 			]
 		);
 
 		$priorities = \AiConnectorPriority\get_priorities();
 
-		$this->assertSame( 'openai', $priorities['text'][0] );
-		$this->assertSame( 'google', $priorities['image'][0] );
+		$this->assertSame( 'openai', $priorities['text'] );
+		$this->assertSame( 'google', $priorities['image'] );
 	}
 
-	public function test_saved_priority_changes_filter_output(): void {
+	public function test_get_priorities_migrates_old_array_format(): void {
 		update_option(
 			\AiConnectorPriority\OPTION_KEY,
 			[
@@ -84,6 +84,18 @@ class FiltersTest extends \WP_UnitTestCase {
 				'image'  => [ 'google', 'openai' ],
 				'vision' => [ 'openai', 'google', 'anthropic' ],
 			]
+		);
+
+		$priorities = \AiConnectorPriority\get_priorities();
+
+		$this->assertSame( 'openai', $priorities['text'] );
+		$this->assertSame( 'google', $priorities['image'] );
+	}
+
+	public function test_saved_provider_changes_filter_output(): void {
+		update_option(
+			\AiConnectorPriority\OPTION_KEY,
+			[ 'text' => 'openai' ]
 		);
 
 		$models = apply_filters( 'wpai_preferred_text_models', [] );

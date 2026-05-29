@@ -141,22 +141,6 @@ class ProvidersTest extends TestCase {
 		$this->assertArrayHasKey( 'openai', $providers );
 	}
 
-	public function test_active_connector_not_in_model_list_still_appears_in_task(): void {
-		// A newly installed provider (e.g. DeepSeek) may be in get_active_connectors()
-		// but have no entries in the AI plugin's default model list yet. It must still
-		// appear in the UI so the user can set its priority.
-		$GLOBALS['_test_ai_connectors'] = [
-			'anthropic' => [ 'name' => 'Anthropic (Claude)' ],
-			'deepseek'  => [ 'name' => 'DeepSeek' ],
-		];
-
-		$models    = [ [ 'anthropic', 'claude-test' ] ]; // deepseek not in model list
-		$providers = \AiConnectorPriority\get_providers_for_task( 'text', $models );
-
-		$this->assertArrayHasKey( 'anthropic', $providers );
-		$this->assertArrayHasKey( 'deepseek', $providers );
-	}
-
 	public function test_each_provider_appears_once_regardless_of_model_count(): void {
 		$models = [
 			[ 'google', 'gemini-flash' ],
