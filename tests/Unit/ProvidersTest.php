@@ -115,6 +115,30 @@ class ProvidersTest extends TestCase {
 		}
 	}
 
+	public function test_providers_for_task_returns_non_empty_when_ai_plugin_functions_exist(): void {
+		// get_providers_for_task() must return providers when called without an
+		// explicit model list — i.e. when it falls through to get_default_models_for_task()
+		// which calls the AI plugin's helper functions. If those functions don't exist
+		// (or if we call apply_filters with [] instead), providers would be empty and
+		// the admin UI shows nothing.
+		$providers = \AiConnectorPriority\get_providers_for_task( 'text' );
+
+		$this->assertNotEmpty( $providers );
+		$this->assertArrayHasKey( 'anthropic', $providers );
+		$this->assertArrayHasKey( 'google', $providers );
+		$this->assertArrayHasKey( 'openai', $providers );
+	}
+
+	public function test_providers_for_image_task_excludes_providers_not_in_image_model_list(): void {
+		// Anthropic has no image models in the stub, so it should not appear for image task.
+		$providers = \AiConnectorPriority\get_providers_for_task( 'image' );
+
+		$this->assertNotEmpty( $providers );
+		$this->assertArrayNotHasKey( 'anthropic', $providers );
+		$this->assertArrayHasKey( 'google', $providers );
+		$this->assertArrayHasKey( 'openai', $providers );
+	}
+
 	public function test_each_provider_appears_once_regardless_of_model_count(): void {
 		$models = [
 			[ 'google', 'gemini-flash' ],

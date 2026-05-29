@@ -24,6 +24,38 @@ namespace WordPress\AI {
 			return $GLOBALS['_test_ai_connectors'] ?? [];
 		}
 	}
+
+	if ( ! function_exists( 'WordPress\AI\get_preferred_models_for_text_generation' ) ) {
+		/** Stub: returns a fixed baseline text model list for unit tests. */
+		function get_preferred_models_for_text_generation(): array {
+			return [
+				[ 'anthropic', 'claude-test' ],
+				[ 'google', 'gemini-test' ],
+				[ 'openai', 'gpt-test' ],
+			];
+		}
+	}
+
+	if ( ! function_exists( 'WordPress\AI\get_preferred_image_models' ) ) {
+		/** Stub: returns a fixed baseline image model list for unit tests. */
+		function get_preferred_image_models(): array {
+			return [
+				[ 'google', 'gemini-image-test' ],
+				[ 'openai', 'gpt-image-test' ],
+			];
+		}
+	}
+
+	if ( ! function_exists( 'WordPress\AI\get_preferred_vision_models' ) ) {
+		/** Stub: returns a fixed baseline vision model list for unit tests. */
+		function get_preferred_vision_models(): array {
+			return [
+				[ 'anthropic', 'claude-test' ],
+				[ 'google', 'gemini-test' ],
+				[ 'openai', 'gpt-test' ],
+			];
+		}
+	}
 }
 
 namespace {

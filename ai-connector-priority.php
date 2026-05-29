@@ -95,11 +95,21 @@ function get_default_models_for_task( string $task ): array {
 		remove_filter( $filter, $callback, $priority );
 	}
 
-	// String literals required here to satisfy PrefixAllGlobals.DynamicHooknameFound.
+	/*
+	 * Call the AI plugin's helpers, not apply_filters() with [].
+	 * Defaults are passed as the second arg to apply_filters() inside those
+	 * functions; calling the filter directly with [] would bypass them.
+	 */
 	$models = match ( $task ) {
-		'text'   => (array) apply_filters( 'wpai_preferred_text_models', [] ),
-		'image'  => (array) apply_filters( 'wpai_preferred_image_models', [] ),
-		'vision' => (array) apply_filters( 'wpai_preferred_vision_models', [] ),
+		'text'   => function_exists( 'WordPress\AI\get_preferred_models_for_text_generation' )
+						? (array) \WordPress\AI\get_preferred_models_for_text_generation()
+						: [],
+		'image'  => function_exists( 'WordPress\AI\get_preferred_image_models' )
+						? (array) \WordPress\AI\get_preferred_image_models()
+						: [],
+		'vision' => function_exists( 'WordPress\AI\get_preferred_vision_models' )
+						? (array) \WordPress\AI\get_preferred_vision_models()
+						: [],
 	};
 
 	if ( false !== $priority ) {
