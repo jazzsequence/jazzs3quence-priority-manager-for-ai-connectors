@@ -293,36 +293,36 @@ function render_page(): void {
 		<form method="post">
 			<?php wp_nonce_field( 'cc_ai_priority_save', '_cc_ai_priority_nonce' ); ?>
 
-			<table class="form-table" role="presentation">
-				<tbody>
-				<?php foreach ( $tasks as $task => $info ) : ?>
-					<?php
-					$providers = get_providers_for_task( $task );
-					if ( empty( $providers ) ) {
-						continue;
-					}
-					$field_id = 'cc_ai_' . $task;
-					?>
-					<tr>
-						<th scope="row">
-							<label for="<?php echo esc_attr( $field_id ); ?>">
-								<?php echo esc_html( $info['label'] ); ?>
-							</label>
-							<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
-						</th>
-						<td>
-							<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>">
-								<?php foreach ( $providers as $value => $label ) : ?>
-									<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $priorities[ $task ], $value ); ?>>
-										<?php echo esc_html( $label ); ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-						</td>
-					</tr>
-				<?php endforeach; ?>
-				</tbody>
-			</table>
+			<?php foreach ( $tasks as $task => $info ) : ?>
+				<?php
+				$providers = get_providers_for_task( $task );
+				if ( empty( $providers ) ) {
+					continue;
+				}
+				$field_id = 'cc_ai_' . $task;
+				?>
+				<h2><?php echo esc_html( $info['label'] ); ?></h2>
+				<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
+
+				<table class="form-table" role="presentation">
+					<tbody>
+						<tr>
+							<th scope="row">
+								<label for="<?php echo esc_attr( $field_id ); ?>"><?php esc_html_e( 'Provider', 'ai-connector-priority' ); ?></label>
+							</th>
+							<td>
+								<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>">
+									<?php foreach ( $providers as $value => $label ) : ?>
+										<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $priorities[ $task ], $value ); ?>>
+											<?php echo esc_html( $label ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			<?php endforeach; ?>
 
 			<?php submit_button( __( 'Save Settings', 'ai-connector-priority' ) ); ?>
 		</form>
