@@ -64,6 +64,12 @@ namespace {
 		define( 'ABSPATH', '/' );
 	}
 
+	if ( ! function_exists( 'plugin_basename' ) ) {
+		function plugin_basename( string $file ): string {
+			return basename( dirname( $file ) ) . '/' . basename( $file );
+		}
+	}
+
 	if ( ! function_exists( 'add_filter' ) ) {
 		function add_filter(): void {}
 	}
@@ -78,6 +84,24 @@ namespace {
 
 	if ( ! function_exists( 'add_action' ) ) {
 		function add_action(): void {}
+	}
+
+	if ( ! function_exists( 'admin_url' ) ) {
+		function admin_url( string $path = '' ): string {
+			return 'http://example.com/wp-admin/' . ltrim( $path, '/' );
+		}
+	}
+
+	if ( ! function_exists( 'esc_url' ) ) {
+		function esc_url( string $url ): string {
+			return $url;
+		}
+	}
+
+	if ( ! function_exists( 'esc_html__' ) ) {
+		function esc_html__( string $text, string $domain = 'default' ): string {
+			return $text;
+		}
 	}
 
 	if ( ! function_exists( 'apply_filters' ) ) {

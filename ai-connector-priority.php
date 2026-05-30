@@ -239,6 +239,18 @@ add_action(
 	}
 );
 
+add_filter(
+	'plugin_action_links_' . plugin_basename( __FILE__ ),
+	static function ( array $links ): array {
+		$links['configure'] = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url( admin_url( 'options-general.php?page=' . PAGE_SLUG ) ),
+			esc_html__( 'Configure', 'ai-connector-priority' )
+		);
+		return $links;
+	}
+);
+
 /**
  * Renders the AI Priority settings page.
  *

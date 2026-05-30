@@ -16,6 +16,20 @@ class FiltersTest extends \WP_UnitTestCase {
 	// Filter registration
 	// -------------------------------------------------------------------------
 
+	public function test_plugin_action_links_filter_is_registered(): void {
+		$basename = plugin_basename( dirname( __DIR__, 2 ) . '/ai-connector-priority.php' );
+		$this->assertTrue( (bool) has_filter( 'plugin_action_links_' . $basename ) );
+	}
+
+	public function test_plugin_action_links_includes_configure_link(): void {
+		$basename = plugin_basename( dirname( __DIR__, 2 ) . '/ai-connector-priority.php' );
+		$links    = apply_filters( 'plugin_action_links_' . $basename, [] );
+
+		$this->assertArrayHasKey( 'configure', $links );
+		$this->assertStringContainsString( 'options-general.php', $links['configure'] );
+		$this->assertStringContainsString( \AiConnectorPriority\PAGE_SLUG, $links['configure'] );
+	}
+
 	public function test_text_models_filter_is_registered(): void {
 		$this->assertTrue( (bool) has_filter( 'wpai_preferred_text_models' ) );
 	}
