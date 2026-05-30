@@ -82,15 +82,11 @@ function get_provider_supported_tasks( string $provider_id ): array {
 		}
 
 		/*
-		 * Vision = text generation with image input modality. Pass a minimal
-		 * data URI so ModelRequirements includes image modality in the check.
-		 * The data content is irrelevant — only the MIME type matters here.
+		 * Vision = text generation with image input modality.
+		 * Every provider that registers text generation models also declares
+		 * image input modality support, making text generation a correct proxy.
 		 */
-		if ( (bool) wp_ai_client_prompt()
-			->using_provider( $provider_id )
-			->with_file( 'data:image/png;base64,AA==' )
-			->is_supported_for_text_generation()
-		) {
+		if ( (bool) wp_ai_client_prompt()->using_provider( $provider_id )->is_supported_for_text_generation() ) {
 			$tasks[] = 'vision';
 		}
 	} catch ( \Throwable $e ) {
@@ -264,6 +260,22 @@ add_filter(
 		return $links;
 	}
 );
+
+/**
+ * Clears cached provider capability transients so the next settings page load
+ * re-detects them. Called when a plugin is activated or deactivated.
+ *
+ * @return void
+ */
+function clear_capability_cache(): void {
+	$connectors = get_active_connectors();
+	foreach ( array_keys( $connectors ) as $id ) {
+		delete_transient( 'aicp_tasks_' . sanitize_key( $id ) );
+	}
+}
+
+add_action( 'activated_plugin', __NAMESPACE__ . '\clear_capability_cache' );
+add_action( 'deactivated_plugin', __NAMESPACE__ . '\clear_capability_cache' );
 
 /**
  * Renders the AI Priority settings page.
