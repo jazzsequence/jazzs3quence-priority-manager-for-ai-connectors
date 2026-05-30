@@ -290,7 +290,8 @@ function render_page(): void {
 	/*
 	 * Re-detect provider capabilities on every settings page load.
 	 * Transients serve the filter hooks on all other page loads;
-	 * the settings page pays the API cost and refreshes them.
+	 * the settings page makes a metadata request to each provider API
+	 * and writes fresh transients for the rest of the site.
 	 */
 	clear_capability_cache();
 
