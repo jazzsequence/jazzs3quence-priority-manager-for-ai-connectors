@@ -64,6 +64,10 @@ namespace {
 		define( 'ABSPATH', '/' );
 	}
 
+	if ( ! defined( 'DAY_IN_SECONDS' ) ) {
+		define( 'DAY_IN_SECONDS', 86400 );
+	}
+
 	if ( ! function_exists( 'plugin_basename' ) ) {
 		function plugin_basename( string $file ): string {
 			return basename( dirname( $file ) ) . '/' . basename( $file );
@@ -101,6 +105,26 @@ namespace {
 	if ( ! function_exists( 'esc_html__' ) ) {
 		function esc_html__( string $text, string $domain = 'default' ): string {
 			return $text;
+		}
+	}
+
+	if ( ! function_exists( 'get_transient' ) ) {
+		function get_transient( string $transient ): mixed {
+			return $GLOBALS['_test_transients'][ $transient ] ?? false;
+		}
+	}
+
+	if ( ! function_exists( 'set_transient' ) ) {
+		function set_transient( string $transient, mixed $value, int $expiration = 0 ): bool {
+			$GLOBALS['_test_transients'][ $transient ] = $value;
+			return true;
+		}
+	}
+
+	if ( ! function_exists( 'delete_transient' ) ) {
+		function delete_transient( string $transient ): bool {
+			unset( $GLOBALS['_test_transients'][ $transient ] );
+			return true;
 		}
 	}
 

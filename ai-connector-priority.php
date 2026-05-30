@@ -44,80 +44,94 @@ function get_active_connectors(): array {
 }
 
 /**
- * Returns active providers that support a given task, as ID => label pairs.
+ * Returns the task types a given provider supports, using a WordPress transient
+ * as a 24-hour cache so the AiClient capability check only fires once per day.
  *
- * Derives which providers support the task from the AI plugin's default model
- * list, then appends any active connectors not yet present in that list.
+ * When wp_ai_client_prompt() is unavailable (AI plugin not loaded) or the
+ * provider is not configured (no credentials), all tasks are returned so the
+ * provider is visible in the UI rather than silently hidden.
  *
- * @param string                                        $task   Task type: 'text', 'image', or 'vision'.
- * @param array<int, array{0: string, 1: string}>|null $models Pre-fetched model list, or null to apply the filter.
- * @return array<string, string> Provider ID => display label.
+ * @param string $provider_id Provider ID as registered with the AI plugin.
+ * @return string[] Supported task types: any combination of 'text', 'image', 'vision'.
  */
-function get_providers_for_task( string $task, ?array $models = null ): array {
-	if ( null === $models ) {
-		$models = get_default_models_for_task( $task );
+function get_provider_supported_tasks( string $provider_id ): array {
+	$transient_key = 'aicp_tasks_' . sanitize_key( $provider_id );
+	$cached        = get_transient( $transient_key );
+
+	if ( false !== $cached ) {
+		return (array) $cached;
 	}
 
+	$all_tasks = [ 'text', 'image', 'vision' ];
+
+	if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+		// AI plugin not loaded — assume all tasks supported.
+		set_transient( $transient_key, $all_tasks, DAY_IN_SECONDS );
+		return $all_tasks;
+	}
+
+	$tasks = [];
+
+	try {
+		if ( (bool) wp_ai_client_prompt()->using_provider( $provider_id )->is_supported_for_text_generation() ) {
+			$tasks[] = 'text';
+		}
+
+		if ( (bool) wp_ai_client_prompt()->using_provider( $provider_id )->is_supported_for_image_generation() ) {
+			$tasks[] = 'image';
+		}
+
+		/*
+		 * Vision = text generation with image input modality. Pass a minimal
+		 * data URI so ModelRequirements includes image modality in the check.
+		 * The data content is irrelevant — only the MIME type matters here.
+		 */
+		if ( (bool) wp_ai_client_prompt()
+			->using_provider( $provider_id )
+			->with_file( 'data:image/png;base64,AA==' )
+			->is_supported_for_text_generation()
+		) {
+			$tasks[] = 'vision';
+		}
+	} catch ( \Throwable $e ) {
+		// Provider not configured or AiClient error — assume all tasks.
+		set_transient( $transient_key, $all_tasks, DAY_IN_SECONDS );
+		return $all_tasks;
+	}
+
+	// Empty result means provider is registered but not yet configured — assume all.
+	if ( empty( $tasks ) ) {
+		set_transient( $transient_key, $all_tasks, DAY_IN_SECONDS );
+		return $all_tasks;
+	}
+
+	set_transient( $transient_key, $tasks, DAY_IN_SECONDS );
+	return $tasks;
+}
+
+/**
+ * Returns active providers that support a given task, as ID => label pairs.
+ *
+ * Capability information comes from the AiClient registry, cached in WordPress
+ * transients. Providers without cached capabilities (not yet configured) are
+ * shown for all tasks so they remain visible in the UI.
+ *
+ * @param string $task Task type: 'text', 'image', or 'vision'.
+ * @return array<string, string> Provider ID => display label.
+ */
+function get_providers_for_task( string $task ): array {
 	$active = get_active_connectors();
 	$labels = [];
 
-	foreach ( $models as [ $provider ] ) {
-		if ( isset( $active[ $provider ] ) && ! isset( $labels[ $provider ] ) ) {
-			$labels[ $provider ] = $active[ $provider ]['name'];
+	foreach ( $active as $id => $connector ) {
+		if ( in_array( $task, get_provider_supported_tasks( $id ), true ) ) {
+			$labels[ $id ] = $connector['name'];
 		}
 	}
 
 	return $labels;
 }
 
-/**
- * Returns the AI plugin's default model list for a task by applying its filter
- * without our own hook attached, so we see the baseline ordering.
- *
- * @param string $task Task type: 'text', 'image', or 'vision'.
- * @return array<int, array{0: string, 1: string}>
- */
-function get_default_models_for_task( string $task ): array {
-	$map = [
-		'text'   => [ 'wpai_preferred_text_models', __NAMESPACE__ . '\reorder_models_for_text' ],
-		'image'  => [ 'wpai_preferred_image_models', __NAMESPACE__ . '\reorder_models_for_image' ],
-		'vision' => [ 'wpai_preferred_vision_models', __NAMESPACE__ . '\reorder_models_for_vision' ],
-	];
-
-	if ( ! isset( $map[ $task ] ) ) {
-		return [];
-	}
-
-	[ $filter, $callback ] = $map[ $task ];
-	$priority              = has_filter( $filter, $callback );
-
-	if ( false !== $priority ) {
-		remove_filter( $filter, $callback, $priority );
-	}
-
-	/*
-	 * Call the AI plugin's helpers, not apply_filters() with [].
-	 * Defaults are passed as the second arg to apply_filters() inside those
-	 * functions; calling the filter directly with [] would bypass them.
-	 */
-	$models = match ( $task ) {
-		'text'   => function_exists( 'WordPress\AI\get_preferred_models_for_text_generation' )
-						? (array) \WordPress\AI\get_preferred_models_for_text_generation()
-						: [],
-		'image'  => function_exists( 'WordPress\AI\get_preferred_image_models' )
-						? (array) \WordPress\AI\get_preferred_image_models()
-						: [],
-		'vision' => function_exists( 'WordPress\AI\get_preferred_vision_models' )
-						? (array) \WordPress\AI\get_preferred_vision_models()
-						: [],
-	};
-
-	if ( false !== $priority ) {
-		add_filter( $filter, $callback );
-	}
-
-	return $models;
-}
 
 /**
  * Returns the saved preferred provider per task type, merged with defaults.
