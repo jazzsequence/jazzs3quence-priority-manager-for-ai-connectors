@@ -80,16 +80,16 @@ class ProvidersTest extends TestCase {
 		$this->assertNotContains( 'image', $tasks );
 	}
 
-	public function test_falls_back_to_all_tasks_when_wp_ai_client_unavailable(): void {
+	public function test_falls_back_to_text_and_vision_when_wp_ai_client_unavailable(): void {
 		// No transient cached, and wp_ai_client_prompt doesn't exist in unit tests.
+		// Image generation is a specialized capability — the safe default excludes it.
 		unset( $GLOBALS['_test_transients']['aicp_tasks_newprovider'] );
 
 		$tasks = \AiConnectorPriority\get_provider_supported_tasks( 'newprovider' );
 
-		// Without wp_ai_client_prompt, all tasks are assumed supported.
 		$this->assertContains( 'text', $tasks );
-		$this->assertContains( 'image', $tasks );
 		$this->assertContains( 'vision', $tasks );
+		$this->assertNotContains( 'image', $tasks );
 	}
 
 	public function test_caches_result_in_transient(): void {
@@ -120,6 +120,17 @@ class ProvidersTest extends TestCase {
 		$this->assertArrayNotHasKey( 'anthropic', $providers );
 		$this->assertArrayHasKey( 'google', $providers );
 		$this->assertArrayHasKey( 'openai', $providers );
+	}
+
+	public function test_unconfigured_provider_does_not_appear_for_image_task(): void {
+		// A provider active but without credentials falls back to ['text', 'vision'].
+		// It must NOT appear for image generation, which is a specialized capability.
+		$GLOBALS['_test_ai_connectors']['deepseek'] = [ 'name' => 'DeepSeek' ];
+		unset( $GLOBALS['_test_transients']['aicp_tasks_deepseek'] );
+
+		$providers = \AiConnectorPriority\get_providers_for_task( 'image' );
+
+		$this->assertArrayNotHasKey( 'deepseek', $providers );
 	}
 
 	public function test_vision_task_shows_providers_that_support_vision(): void {
@@ -157,16 +168,19 @@ class ProvidersTest extends TestCase {
 		}
 	}
 
-	public function test_new_provider_without_cached_capabilities_shows_for_all_tasks(): void {
-		// DeepSeek is active but has no cached capability data yet.
+	public function test_new_provider_without_cached_capabilities_appears_for_text_and_vision_not_image(): void {
+		// A provider without cached capabilities (not yet configured) defaults to
+		// ['text', 'vision']. Image generation is specialized — we never assume a
+		// provider supports it without a confirmed capability check.
 		$GLOBALS['_test_ai_connectors']['deepseek'] = [ 'name' => 'DeepSeek' ];
 		unset( $GLOBALS['_test_transients']['aicp_tasks_deepseek'] );
 
-		// Without wp_ai_client_prompt (unit test env), all tasks are assumed.
-		$text  = \AiConnectorPriority\get_providers_for_task( 'text' );
-		$image = \AiConnectorPriority\get_providers_for_task( 'image' );
+		$text   = \AiConnectorPriority\get_providers_for_task( 'text' );
+		$image  = \AiConnectorPriority\get_providers_for_task( 'image' );
+		$vision = \AiConnectorPriority\get_providers_for_task( 'vision' );
 
 		$this->assertArrayHasKey( 'deepseek', $text );
-		$this->assertArrayHasKey( 'deepseek', $image );
+		$this->assertArrayNotHasKey( 'deepseek', $image );
+		$this->assertArrayHasKey( 'deepseek', $vision );
 	}
 }

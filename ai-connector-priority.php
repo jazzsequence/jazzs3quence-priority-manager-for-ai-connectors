@@ -62,12 +62,16 @@ function get_provider_supported_tasks( string $provider_id ): array {
 		return (array) $cached;
 	}
 
-	$all_tasks = [ 'text', 'image', 'vision' ];
+	/*
+	 * Image generation is specialized — most providers don't support it.
+	 * Default to text + vision so unconfigured providers are never shown
+	 * for image tasks they cannot handle.
+	 */
+	$default_tasks = [ 'text', 'vision' ];
 
 	if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
-		// AI plugin not loaded — assume all tasks supported.
-		set_transient( $transient_key, $all_tasks, DAY_IN_SECONDS );
-		return $all_tasks;
+		set_transient( $transient_key, $default_tasks, DAY_IN_SECONDS );
+		return $default_tasks;
 	}
 
 	$tasks = [];
@@ -90,15 +94,13 @@ function get_provider_supported_tasks( string $provider_id ): array {
 			$tasks[] = 'vision';
 		}
 	} catch ( \Throwable $e ) {
-		// Provider not configured or AiClient error — assume all tasks.
-		set_transient( $transient_key, $all_tasks, DAY_IN_SECONDS );
-		return $all_tasks;
+		set_transient( $transient_key, $default_tasks, DAY_IN_SECONDS );
+		return $default_tasks;
 	}
 
-	// Empty result means provider is registered but not yet configured — assume all.
 	if ( empty( $tasks ) ) {
-		set_transient( $transient_key, $all_tasks, DAY_IN_SECONDS );
-		return $all_tasks;
+		set_transient( $transient_key, $default_tasks, DAY_IN_SECONDS );
+		return $default_tasks;
 	}
 
 	set_transient( $transient_key, $tasks, DAY_IN_SECONDS );

@@ -16,12 +16,18 @@ class PrioritiesTest extends TestCase {
 			'google'    => [ 'name' => 'Google (Gemini)' ],
 			'openai'    => [ 'name' => 'OpenAI' ],
 		];
+		$GLOBALS['_test_transients'] = [
+			'aicp_tasks_anthropic' => [ 'text', 'vision' ],
+			'aicp_tasks_google'    => [ 'text', 'image', 'vision' ],
+			'aicp_tasks_openai'    => [ 'text', 'image', 'vision' ],
+		];
 	}
 
 	protected function tearDown(): void {
 		unset( $GLOBALS['_test_wp_options'] );
 		unset( $GLOBALS['_test_ai_connectors'] );
 		unset( $GLOBALS['_test_active_connectors'] );
+		unset( $GLOBALS['_test_transients'] );
 	}
 
 	// -------------------------------------------------------------------------
