@@ -69,7 +69,7 @@ function get_provider_supported_tasks( string $provider_id ): array {
 	 */
 	$default_tasks = [ 'text', 'vision' ];
 
-	if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+	if ( ! class_exists( 'WordPress\AiClient\AiClient' ) ) {
 		set_transient( $transient_key, $default_tasks, DAY_IN_SECONDS );
 		return $default_tasks;
 	}
@@ -77,21 +77,31 @@ function get_provider_supported_tasks( string $provider_id ): array {
 	$tasks = [];
 
 	try {
-		if ( (bool) wp_ai_client_prompt()->using_provider( $provider_id )->is_supported_for_text_generation() ) {
+		$registry = \WordPress\AiClient\AiClient::defaultRegistry();
+
+		if ( ! $registry->isProviderConfigured( $provider_id ) ) {
+			set_transient( $transient_key, $default_tasks, DAY_IN_SECONDS );
+			return $default_tasks;
+		}
+
+		$text_reqs = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
+			[ \WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::textGeneration() ],
+			[]
+		);
+
+		if ( ! empty( $registry->findProviderModelsMetadataForSupport( $provider_id, $text_reqs ) ) ) {
 			$tasks[] = 'text';
-		}
-
-		if ( (bool) wp_ai_client_prompt()->using_provider( $provider_id )->is_supported_for_image_generation() ) {
-			$tasks[] = 'image';
-		}
-
-		/*
-		 * Vision = text generation with image input modality.
-		 * Every provider that registers text generation models also declares
-		 * image input modality support, making text generation a correct proxy.
-		 */
-		if ( (bool) wp_ai_client_prompt()->using_provider( $provider_id )->is_supported_for_text_generation() ) {
+			// Vision = text generation with image input; if text gen works, vision works.
 			$tasks[] = 'vision';
+		}
+
+		$image_reqs = new \WordPress\AiClient\Providers\Models\DTO\ModelRequirements(
+			[ \WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::imageGeneration() ],
+			[]
+		);
+
+		if ( ! empty( $registry->findProviderModelsMetadataForSupport( $provider_id, $image_reqs ) ) ) {
+			$tasks[] = 'image';
 		}
 	} catch ( \Throwable $e ) {
 		set_transient( $transient_key, $default_tasks, DAY_IN_SECONDS );
