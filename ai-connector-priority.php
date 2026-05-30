@@ -287,6 +287,13 @@ function render_page(): void {
 		return;
 	}
 
+	/*
+	 * Re-detect provider capabilities on every settings page load.
+	 * Transients serve the filter hooks on all other page loads;
+	 * the settings page pays the API cost and refreshes them.
+	 */
+	clear_capability_cache();
+
 	$saved = false;
 
 	if (
