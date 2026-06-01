@@ -51,6 +51,14 @@ Provider capabilities are detected automatically from the AI plugin's registry. 
 
 The AI plugin selects a provider from a preference list. This plugin moves your chosen provider's models to the front of that list.
 
+### Interaction with Developer Mode
+
+Developer Mode (Settings → AI → Developer Mode) configures a specific provider and model for individual AI features (e.g. Title Generation, Alt Text Generation). This plugin sets a preferred provider per task type (text, image, vision), each of which covers several features.
+
+The two settings layer. Developer Mode takes precedence for any feature it explicitly configures; this plugin governs the rest. When Developer Mode has a provider and model set for a specific feature, that feature bypasses this plugin's preference entirely. Features without a Developer Mode override use this plugin's selection as normal.
+
+The settings page shows a notice next to any task type that has at least one feature with an active Developer Mode override, so it is clear where this plugin's selections may not apply.
+
 ## Option key
 
 Settings are stored in `wp_options` under `ai_connector_priority`.

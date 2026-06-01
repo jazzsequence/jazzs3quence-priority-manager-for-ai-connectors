@@ -40,9 +40,13 @@ No — this plugin hooks into the AI plugin's `wpai_preferred_*_models` filters.
 
 This plugin removes deactivated providers from the model list before it reaches the AI plugin. If your preferred provider is deactivated, the AI plugin uses whatever provider comes first in its default list.
 
-= Will this conflict with the AI plugin's Developer Mode setting? =
+= How does this interact with the AI plugin's Developer Mode? =
 
-Developer Mode (Settings → AI → Developer Mode) sets a specific provider and model per feature and takes precedence over this plugin's selection.
+Developer Mode (Settings → AI → Developer Mode) configures a specific provider and model for individual AI features (e.g. Title Generation, Alt Text). This plugin sets a preferred provider per task type (text, image, vision), which covers multiple features each.
+
+When Developer Mode has a provider and model set for a specific feature, that feature ignores this plugin's preference entirely — the Developer Mode selection wins. Features without a Developer Mode override use this plugin's selection as normal.
+
+The settings page will show a notice next to any task type that has at least one feature with a Developer Mode override active.
 
 == Changelog ==
 

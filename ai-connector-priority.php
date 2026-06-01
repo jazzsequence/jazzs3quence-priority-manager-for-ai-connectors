@@ -248,6 +248,121 @@ add_filter( 'wpai_preferred_text_models', __NAMESPACE__ . '\reorder_models_for_t
 add_filter( 'wpai_preferred_image_models', __NAMESPACE__ . '\reorder_models_for_image' );
 add_filter( 'wpai_preferred_vision_models', __NAMESPACE__ . '\reorder_models_for_vision' );
 
+/**
+ * Returns the map of task types to the AI plugin feature IDs that use them.
+ *
+ * Feature IDs are taken from the AI plugin's experiment/feature classes (those
+ * that call set_provider_model_preference(), which is the only path through which
+ * Developer Mode overrides can apply). This list must be kept in sync with the
+ * AI plugin — add new entries here when the AI plugin introduces new features.
+ *
+ * Features that call using_model_preference() directly (e.g. comment-moderation)
+ * are NOT included because they cannot have per-feature Developer Mode overrides.
+ *
+ * @return array<string, string[]> Task type => list of feature IDs.
+ */
+function get_task_feature_map(): array {
+	return [
+		'text'   => [
+			'title-generation',
+			'excerpt-generation',
+			'summarization',
+			'editorial-notes',
+			'editorial-updates',
+			'content-resizing',
+			'meta-description',
+			'content-classification',
+		],
+		'image'  => [ 'image-generation' ],
+		'vision' => [ 'alt-text-generation' ],
+	];
+}
+
+/**
+ * Returns true when every feature in a task type has a Developer Mode override,
+ * meaning the provider selector for that task has no effect at all.
+ *
+ * @param string $task Task type: 'text', 'image', or 'vision'.
+ * @return bool
+ */
+function is_task_fully_overridden( string $task ): bool {
+	$feature_ids = get_task_feature_map()[ $task ] ?? [];
+
+	if ( empty( $feature_ids ) ) {
+		return false;
+	}
+
+	foreach ( $feature_ids as $feature_id ) {
+		if ( ! is_developer_mode_override_active( $feature_id ) ) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Returns all active Developer Mode overrides grouped by task type.
+ *
+ * @return array<string, string[]> Task type => list of overridden feature IDs.
+ */
+function get_developer_mode_overrides_by_task(): array {
+	$result = [];
+
+	foreach ( get_task_feature_map() as $task => $feature_ids ) {
+		foreach ( $feature_ids as $feature_id ) {
+			if ( is_developer_mode_override_active( $feature_id ) ) {
+				$result[ $task ][] = $feature_id;
+			}
+		}
+	}
+
+	return $result;
+}
+
+/**
+ * Returns true when a specific feature has an active Developer Mode override.
+ *
+ * Matches the AI plugin's own logic in set_provider_model_preference(): an
+ * override is active only when both provider AND model are non-empty strings.
+ * When cleared, the option is set to ['provider' => '', 'model' => ''] rather
+ * than an empty array, so !empty() on the option itself is not sufficient.
+ *
+ * @param string $feature_id AI plugin feature ID.
+ * @return bool
+ */
+function is_developer_mode_override_active( string $feature_id ): bool {
+	$config = get_option( "wpai_feature_{$feature_id}_field_developer", [] );
+
+	return ! empty( $config['provider'] ) && ! empty( $config['model'] );
+}
+
+/**
+ * Returns the task types for which at least one feature has a Developer Mode
+ * override configured in the AI plugin.
+ *
+ * The AI plugin stores Developer Mode config in wp_options as
+ * `wpai_feature_{feature_id}_field_developer`. A non-empty value means an
+ * admin has explicitly chosen a provider and model for that feature,
+ * which takes precedence over this plugin's task-level selection.
+ *
+ * @return string[] Task type IDs that have at least one active override.
+ */
+function get_developer_mode_overridden_tasks(): array {
+	$overridden = [];
+
+	foreach ( get_task_feature_map() as $task => $feature_ids ) {
+		foreach ( $feature_ids as $feature_id ) {
+			if ( is_developer_mode_override_active( $feature_id ) ) {
+				$overridden[] = $task;
+				break;
+			}
+		}
+	}
+
+	return $overridden;
+}
+
 add_action(
 	'admin_menu',
 	static function (): void {
@@ -258,6 +373,25 @@ add_action(
 			PAGE_SLUG,
 			__NAMESPACE__ . '\render_page'
 		);
+	}
+);
+
+add_action(
+	'admin_head',
+	static function (): void {
+		$screen = get_current_screen();
+		if ( ! $screen || 'settings_page_' . PAGE_SLUG !== $screen->id ) {
+			return;
+		}
+		?>
+		<style>
+			.aicp-developer-mode-notice {
+				font-style: italic;
+				color: #cc0000;
+				margin: 0 1em;
+			}
+		</style>
+		<?php
 	}
 );
 
@@ -316,8 +450,9 @@ function render_page(): void {
 		$saved = save_priorities();
 	}
 
-	$active     = get_active_connectors();
-	$priorities = get_priorities();
+	$active           = get_active_connectors();
+	$priorities       = get_priorities();
+	$overrides_by_task = get_developer_mode_overrides_by_task();
 	$tasks      = [
 		'text'   => [
 			'label'       => __( 'Text Generation', 'ai-connector-priority' ),
@@ -362,6 +497,11 @@ function render_page(): void {
 				<h2><?php echo esc_html( $info['label'] ); ?></h2>
 				<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
 
+				<?php
+				$overridden_features = $overrides_by_task[ $task ] ?? [];
+				$task_overridden     = ! empty( $overridden_features );
+				$task_disabled       = $task_overridden && is_task_fully_overridden( $task );
+				?>
 				<table class="form-table" role="presentation">
 					<tbody>
 						<tr>
@@ -369,13 +509,25 @@ function render_page(): void {
 								<label for="<?php echo esc_attr( $field_id ); ?>"><?php esc_html_e( 'Provider', 'ai-connector-priority' ); ?></label>
 							</th>
 							<td>
-								<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>">
+								<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>" <?php disabled( $task_disabled ); ?>>
 									<?php foreach ( $providers as $value => $label ) : ?>
 										<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $priorities[ $task ], $value ); ?>>
 											<?php echo esc_html( $label ); ?>
 										</option>
 									<?php endforeach; ?>
 								</select>
+								<?php if ( $task_overridden ) : ?>
+									<span class="description aicp-developer-mode-notice">
+										<?php if ( $task_disabled ) : ?>
+											<?php esc_html_e( 'Overridden by AI plugin — this selection has no effect.', 'ai-connector-priority' ); ?>
+										<?php else : ?>
+											<?php
+											echo esc_html__( 'Overridden by AI plugin for:', 'ai-connector-priority' ) . ' ';
+											echo esc_html( implode( ', ', $overridden_features ) ) . '.';
+											?>
+										<?php endif; ?>
+									</span>
+								<?php endif; ?>
 							</td>
 						</tr>
 					</tbody>
