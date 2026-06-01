@@ -1,7 +1,7 @@
 {
     "name": "jazzsequence/ai-connector-priority",
     "type": "wordpress-plugin",
-    "description": "Admin settings page to configure which AI provider is tried first for each task type (text, image, vision). Requires the WordPress AI plugin.",
+    "description": "Admin settings page to choose which AI provider to use for each task type (text, image, vision). Requires the WordPress AI plugin.",
     "license": "MIT",
     "authors": [
         {
