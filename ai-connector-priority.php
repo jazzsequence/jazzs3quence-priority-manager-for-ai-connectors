@@ -248,6 +248,58 @@ add_filter( 'wpai_preferred_text_models', __NAMESPACE__ . '\reorder_models_for_t
 add_filter( 'wpai_preferred_image_models', __NAMESPACE__ . '\reorder_models_for_image' );
 add_filter( 'wpai_preferred_vision_models', __NAMESPACE__ . '\reorder_models_for_vision' );
 
+/**
+ * Returns the map of task types to the AI plugin feature IDs that use them.
+ *
+ * Feature IDs correspond to the AI plugin's internal experiment/feature classes
+ * and are used to check whether Developer Mode overrides are active.
+ *
+ * @return array<string, string[]> Task type => list of feature IDs.
+ */
+function get_task_feature_map(): array {
+	return [
+		'text'   => [
+			'title-generation',
+			'excerpt-generation',
+			'summarization',
+			'editorial-notes',
+			'editorial-updates',
+			'content-resizing',
+			'meta-description',
+			'comment-moderation',
+		],
+		'image'  => [ 'image-generation' ],
+		'vision' => [ 'alt-text-generation' ],
+	];
+}
+
+/**
+ * Returns the task types for which at least one feature has a Developer Mode
+ * override configured in the AI plugin.
+ *
+ * The AI plugin stores Developer Mode config in wp_options as
+ * `wpai_feature_{feature_id}_field_developer`. A non-empty value means an
+ * admin has explicitly chosen a provider and model for that feature,
+ * which takes precedence over this plugin's task-level selection.
+ *
+ * @return string[] Task type IDs that have at least one active override.
+ */
+function get_developer_mode_overridden_tasks(): array {
+	$overridden = [];
+
+	foreach ( get_task_feature_map() as $task => $feature_ids ) {
+		foreach ( $feature_ids as $feature_id ) {
+			$config = get_option( "wpai_feature_{$feature_id}_field_developer", [] );
+			if ( ! empty( $config ) ) {
+				$overridden[] = $task;
+				break;
+			}
+		}
+	}
+
+	return $overridden;
+}
+
 add_action(
 	'admin_menu',
 	static function (): void {
@@ -316,8 +368,9 @@ function render_page(): void {
 		$saved = save_priorities();
 	}
 
-	$active     = get_active_connectors();
-	$priorities = get_priorities();
+	$active              = get_active_connectors();
+	$priorities          = get_priorities();
+	$overridden_tasks    = get_developer_mode_overridden_tasks();
 	$tasks      = [
 		'text'   => [
 			'label'       => __( 'Text Generation', 'ai-connector-priority' ),
@@ -361,6 +414,12 @@ function render_page(): void {
 				?>
 				<h2><?php echo esc_html( $info['label'] ); ?></h2>
 				<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
+
+				<?php if ( in_array( $task, $overridden_tasks, true ) ) : ?>
+					<div class="notice notice-info inline">
+						<p><?php esc_html_e( 'Some capabilities for this task type may be overridden by the AI plugin\'s Developer Mode settings.', 'ai-connector-priority' ); ?></p>
+					</div>
+				<?php endif; ?>
 
 				<table class="form-table" role="presentation">
 					<tbody>
