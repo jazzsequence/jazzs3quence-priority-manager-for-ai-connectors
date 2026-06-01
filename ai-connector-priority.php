@@ -503,10 +503,10 @@ function render_page(): void {
 								<?php if ( $task_overridden ) : ?>
 									<span class="description aicp-developer-mode-notice">
 										<?php if ( $task_disabled ) : ?>
-											<?php esc_html_e( 'Overridden by the AI plugin\'s Developer Mode — this selection has no effect.', 'ai-connector-priority' ); ?>
+											<?php esc_html_e( 'Overridden by AI plugin — this selection has no effect.', 'ai-connector-priority' ); ?>
 										<?php else : ?>
 											<?php
-											echo esc_html__( 'Overridden by Developer Mode for:', 'ai-connector-priority' ) . ' ';
+											echo esc_html__( 'Overridden by AI plugin for:', 'ai-connector-priority' ) . ' ';
 											echo esc_html( implode( ', ', $overridden_features ) ) . '.';
 											?>
 										<?php endif; ?>
