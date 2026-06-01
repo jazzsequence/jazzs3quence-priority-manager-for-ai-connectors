@@ -16,6 +16,20 @@ class FiltersTest extends \WP_UnitTestCase {
 	// Filter registration
 	// -------------------------------------------------------------------------
 
+	public function test_plugin_action_links_filter_is_registered(): void {
+		$basename = plugin_basename( dirname( __DIR__, 2 ) . '/ai-connector-priority.php' );
+		$this->assertTrue( (bool) has_filter( 'plugin_action_links_' . $basename ) );
+	}
+
+	public function test_plugin_action_links_includes_configure_link(): void {
+		$basename = plugin_basename( dirname( __DIR__, 2 ) . '/ai-connector-priority.php' );
+		$links    = apply_filters( 'plugin_action_links_' . $basename, [] );
+
+		$this->assertArrayHasKey( 'configure', $links );
+		$this->assertStringContainsString( 'options-general.php', $links['configure'] );
+		$this->assertStringContainsString( \AiConnectorPriority\PAGE_SLUG, $links['configure'] );
+	}
+
 	public function test_text_models_filter_is_registered(): void {
 		$this->assertTrue( (bool) has_filter( 'wpai_preferred_text_models' ) );
 	}
@@ -64,19 +78,19 @@ class FiltersTest extends \WP_UnitTestCase {
 		update_option(
 			\AiConnectorPriority\OPTION_KEY,
 			[
-				'text'   => [ 'openai', 'anthropic', 'google' ],
-				'image'  => [ 'google', 'openai' ],
-				'vision' => [ 'openai', 'anthropic', 'google' ],
+				'text'   => 'openai',
+				'image'  => 'google',
+				'vision' => 'openai',
 			]
 		);
 
 		$priorities = \AiConnectorPriority\get_priorities();
 
-		$this->assertSame( 'openai', $priorities['text'][0] );
-		$this->assertSame( 'google', $priorities['image'][0] );
+		$this->assertSame( 'openai', $priorities['text'] );
+		$this->assertSame( 'google', $priorities['image'] );
 	}
 
-	public function test_saved_priority_changes_filter_output(): void {
+	public function test_get_priorities_migrates_old_array_format(): void {
 		update_option(
 			\AiConnectorPriority\OPTION_KEY,
 			[
@@ -84,6 +98,18 @@ class FiltersTest extends \WP_UnitTestCase {
 				'image'  => [ 'google', 'openai' ],
 				'vision' => [ 'openai', 'google', 'anthropic' ],
 			]
+		);
+
+		$priorities = \AiConnectorPriority\get_priorities();
+
+		$this->assertSame( 'openai', $priorities['text'] );
+		$this->assertSame( 'google', $priorities['image'] );
+	}
+
+	public function test_saved_provider_changes_filter_output(): void {
+		update_option(
+			\AiConnectorPriority\OPTION_KEY,
+			[ 'text' => 'openai' ]
 		);
 
 		$models = apply_filters( 'wpai_preferred_text_models', [] );
