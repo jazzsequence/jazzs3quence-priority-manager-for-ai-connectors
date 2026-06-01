@@ -29,7 +29,17 @@ The plugin's data flow:
 5. `reorder_model_list( $models, $task )` puts the saved preferred provider's models at the front of the incoming list, drops models for inactive providers, and leaves all others in their original order.
 6. Three named filter callbacks (`reorder_models_for_text`, `reorder_models_for_image`, `reorder_models_for_vision`) attach `reorder_model_list()` to the `wpai_preferred_*_models` filters.
 
-The admin page (`render_page()`) shows one `<select>` per task type, populated from `get_providers_for_task()`. A warning notice appears when no provider plugins are active. `save_priorities()` validates the submitted provider ID against `get_providers_for_task()` before persisting.
+The admin page (`render_page()`) shows one `<select>` per task type, populated from `get_providers_for_task()`. A warning notice appears when no provider plugins are active. `save_priorities()` validates the submitted provider ID against `get_providers_for_task()` before persisting. A **Configure** link is injected into the plugins list page via `plugin_action_links_`.
+
+### Developer Mode interaction
+
+`get_task_feature_map()` maps task types to AI plugin feature IDs. Only features that call `set_provider_model_preference()` are included — that is the only path through which Developer Mode overrides can apply per feature.
+
+`is_developer_mode_override_active( $feature_id )` checks whether a specific feature has an active override by reading `wpai_feature_{id}_field_developer` from `wp_options`. Matches the AI plugin's own logic: both `provider` and `model` must be non-empty strings. When a Developer Mode override is cleared, the option is set to `['provider' => '', 'model' => '']`, not an empty array — so `!empty()` on the option alone is not sufficient.
+
+`get_developer_mode_overrides_by_task()` returns all active overrides grouped by task type (task → list of overridden feature IDs). `get_developer_mode_overridden_tasks()` returns just the task type names. `is_task_fully_overridden( $task )` returns true when every feature in a task has an active override — used to disable the select and show a stronger notice.
+
+An `admin_head` hook outputs a small `<style>` block scoped to our settings page screen ID, styling `.aicp-developer-mode-notice`.
 
 ### Maintenance: this plugin tracks the AI plugin's feature set
 
