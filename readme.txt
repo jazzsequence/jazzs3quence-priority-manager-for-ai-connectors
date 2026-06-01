@@ -32,10 +32,6 @@ Requires the [AI plugin](https://wordpress.org/plugins/ai/) and at least one act
 
 == Frequently Asked Questions ==
 
-= Does this work without the AI plugin? =
-
-No — this plugin hooks into the AI plugin's `wpai_preferred_*_models` filters. It has no effect if the AI plugin is not active.
-
 = What happens if my preferred provider's plugin is deactivated? =
 
 This plugin removes deactivated providers from the model list before it reaches the AI plugin. If your preferred provider is deactivated, the AI plugin uses whatever provider comes first in its default list.
