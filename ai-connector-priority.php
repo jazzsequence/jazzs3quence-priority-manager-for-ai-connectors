@@ -251,8 +251,13 @@ add_filter( 'wpai_preferred_vision_models', __NAMESPACE__ . '\reorder_models_for
 /**
  * Returns the map of task types to the AI plugin feature IDs that use them.
  *
- * Feature IDs correspond to the AI plugin's internal experiment/feature classes
- * and are used to check whether Developer Mode overrides are active.
+ * Feature IDs are taken from the AI plugin's experiment/feature classes (those
+ * that call set_provider_model_preference(), which is the only path through which
+ * Developer Mode overrides can apply). This list must be kept in sync with the
+ * AI plugin — add new entries here when the AI plugin introduces new features.
+ *
+ * Features that call using_model_preference() directly (e.g. comment-moderation)
+ * are NOT included because they cannot have per-feature Developer Mode overrides.
  *
  * @return array<string, string[]> Task type => list of feature IDs.
  */

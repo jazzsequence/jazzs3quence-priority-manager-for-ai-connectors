@@ -31,6 +31,18 @@ The plugin's data flow:
 
 The admin page (`render_page()`) shows one `<select>` per task type, populated from `get_providers_for_task()`. A warning notice appears when no provider plugins are active. `save_priorities()` validates the submitted provider ID against `get_providers_for_task()` before persisting.
 
+### Maintenance: this plugin tracks the AI plugin's feature set
+
+This plugin is tightly coupled to the WordPress AI plugin and must be updated reactively when the AI plugin adds new capabilities:
+
+1. **New AI features** — When the AI plugin adds a new ability that calls `set_provider_model_preference()`, add its feature ID to the appropriate task type in `get_task_feature_map()`. Features that call `using_model_preference()` directly cannot have Developer Mode overrides and should not be added.
+
+2. **New task types** — If the AI plugin introduces a new task type beyond text/image/vision (e.g. audio, video), add it to the task type maps throughout the plugin: `get_task_feature_map()`, `get_priorities()`, `reorder_model_list()`, the filter callbacks, and `render_page()`.
+
+3. **New filter hooks** — If the AI plugin introduces new `wpai_preferred_*_models` filters, add corresponding filter callbacks following the pattern of `reorder_models_for_text/image/vision`.
+
+To check for new features in the AI plugin: look for classes in `includes/Abilities/` that call `$this->set_provider_model_preference()` and cross-reference against the current `get_task_feature_map()` return value.
+
 ### Key: capability detection
 
 Provider task support comes from the AiClient registry, not from the `wpai_preferred_*_models` filter output. The WP prompt builder's `isSupported()` ignores `using_provider()` and checks all registered providers — `findProviderModelsMetadataForSupport()` on the registry is the correct per-provider API. Vision is proxied to text generation support: every provider that registers text generation models also declares image input modality support.
