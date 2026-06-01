@@ -293,7 +293,7 @@ function is_task_fully_overridden( string $task ): bool {
 	}
 
 	foreach ( $feature_ids as $feature_id ) {
-		if ( empty( get_option( "wpai_feature_{$feature_id}_field_developer", [] ) ) ) {
+		if ( ! is_developer_mode_override_active( $feature_id ) ) {
 			return false;
 		}
 	}
@@ -311,13 +311,30 @@ function get_developer_mode_overrides_by_task(): array {
 
 	foreach ( get_task_feature_map() as $task => $feature_ids ) {
 		foreach ( $feature_ids as $feature_id ) {
-			if ( ! empty( get_option( "wpai_feature_{$feature_id}_field_developer", [] ) ) ) {
+			if ( is_developer_mode_override_active( $feature_id ) ) {
 				$result[ $task ][] = $feature_id;
 			}
 		}
 	}
 
 	return $result;
+}
+
+/**
+ * Returns true when a specific feature has an active Developer Mode override.
+ *
+ * Matches the AI plugin's own logic in set_provider_model_preference(): an
+ * override is active only when both provider AND model are non-empty strings.
+ * When cleared, the option is set to ['provider' => '', 'model' => ''] rather
+ * than an empty array, so !empty() on the option itself is not sufficient.
+ *
+ * @param string $feature_id AI plugin feature ID.
+ * @return bool
+ */
+function is_developer_mode_override_active( string $feature_id ): bool {
+	$config = get_option( "wpai_feature_{$feature_id}_field_developer", [] );
+
+	return ! empty( $config['provider'] ) && ! empty( $config['model'] );
 }
 
 /**
@@ -336,8 +353,7 @@ function get_developer_mode_overridden_tasks(): array {
 
 	foreach ( get_task_feature_map() as $task => $feature_ids ) {
 		foreach ( $feature_ids as $feature_id ) {
-			$config = get_option( "wpai_feature_{$feature_id}_field_developer", [] );
-			if ( ! empty( $config ) ) {
+			if ( is_developer_mode_override_active( $feature_id ) ) {
 				$overridden[] = $task;
 				break;
 			}

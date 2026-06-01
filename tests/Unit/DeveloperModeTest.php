@@ -148,6 +148,20 @@ class DeveloperModeTest extends TestCase {
 		$this->assertNotContains( 'text', $overridden );
 	}
 
+	public function test_cleared_developer_config_with_empty_strings_is_not_treated_as_override(): void {
+		// When a Developer Mode override is cleared in the AI plugin UI, the option
+		// is set to ['provider' => '', 'model' => ''] — not an empty array.
+		// !empty() on this array returns true, so we must check the values, not the array.
+		$GLOBALS['_test_wp_options']['wpai_feature_title-generation_field_developer'] = [
+			'provider' => '',
+			'model'    => '',
+		];
+
+		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+
+		$this->assertNotContains( 'text', $overridden );
+	}
+
 	// -------------------------------------------------------------------------
 	// get_developer_mode_overrides_by_task()
 	// -------------------------------------------------------------------------
