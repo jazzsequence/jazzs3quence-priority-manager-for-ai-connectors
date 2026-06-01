@@ -26,7 +26,7 @@ Requires the [AI plugin](https://wordpress.org/plugins/ai/) and at least one act
 
 == Installation ==
 
-1. Install the plugin through the WordPress plugins screen, or upload the plugin folder to `/wp-content/plugins/`
+1. Search for "AI Connector Priority" in the WordPress plugins screen and click **Install Now**, or upload the plugin folder to `/wp-content/plugins/`
 2. Activate the plugin through the Plugins screen
 3. Go to **Settings → AI Priority** to configure your preferred provider
 

@@ -23,24 +23,25 @@ This plugin moves the user's chosen provider to the front of that list. All othe
 The plugin's data flow:
 
 1. `get_active_connectors()` calls `\WordPress\AI\get_ai_connectors(true)`, which returns only providers whose plugin is currently active (checked via `is_plugin_active()` for built-in providers; always active for custom providers with no plugin file key).
-2. `get_providers_for_task( $task )` intersects the AI plugin's default model list for that task with the active connectors, returning `id => label` pairs. Providers that have no models in a task's list are excluded (e.g. Anthropic does not appear for image tasks).
-3. `get_priorities()` reads `wp_options` key `ai_connector_priority` (constant `OPTION_KEY`). Returns a single provider ID per task, defaulting to the first active provider. Migrates the 1.0.x ordered-array format automatically.
-4. `reorder_model_list( $models, $task )` puts the saved preferred provider's models at the front of the incoming list, drops models for inactive providers, and leaves all others in their original order.
-5. Three named filter callbacks (`reorder_models_for_text`, `reorder_models_for_image`, `reorder_models_for_vision`) attach `reorder_model_list()` to the `wpai_preferred_*_models` filters.
+2. `get_provider_supported_tasks( $provider_id )` queries the AiClient registry directly via `findProviderModelsMetadataForSupport()` to determine which task types a provider supports. Results are cached in WordPress transients (24h TTL). Providers without credentials fall back to `['text', 'vision']` — never image, since image generation must be confirmed. The cache is cleared on every settings page load and on plugin activation/deactivation.
+3. `get_providers_for_task( $task )` iterates active connectors and includes only those whose supported tasks (from step 2) contain the given task.
+4. `get_priorities()` reads `wp_options` key `ai_connector_priority` (constant `OPTION_KEY`). Returns a single provider ID per task, defaulting to the first active provider for that task. Migrates the 1.0.x ordered-array format automatically.
+5. `reorder_model_list( $models, $task )` puts the saved preferred provider's models at the front of the incoming list, drops models for inactive providers, and leaves all others in their original order.
+6. Three named filter callbacks (`reorder_models_for_text`, `reorder_models_for_image`, `reorder_models_for_vision`) attach `reorder_model_list()` to the `wpai_preferred_*_models` filters.
 
 The admin page (`render_page()`) shows one `<select>` per task type, populated from `get_providers_for_task()`. A warning notice appears when no provider plugins are active. `save_priorities()` validates the submitted provider ID against `get_providers_for_task()` before persisting.
 
-### Key: get_default_models_for_task()
+### Key: capability detection
 
-This function temporarily removes our reorder hook, then calls the AI plugin's own helper (`\WordPress\AI\get_preferred_models_for_text_generation()` etc.) to get the baseline model list including the AI plugin's built-in defaults. Calling `apply_filters()` directly with `[]` would bypass those defaults. After fetching the list, the hook is re-added.
+Provider task support comes from the AiClient registry, not from the `wpai_preferred_*_models` filter output. The WP prompt builder's `isSupported()` ignores `using_provider()` and checks all registered providers — `findProviderModelsMetadataForSupport()` on the registry is the correct per-provider API. Vision is proxied to text generation support: every provider that registers text generation models also declares image input modality support.
 
-### Key constraint: providers not in a task's model list are excluded
+### Key: capability cache
 
-`get_providers_for_task()` only returns providers that appear in the AI plugin's default model list for that task. A provider that doesn't register models in `wpai_preferred_*_models` won't appear in the UI for that task. This is correct — if the AI plugin doesn't know a provider supports a task, neither should this plugin.
+`get_provider_supported_tasks()` caches results in WordPress transients keyed `aicp_tasks_{provider_id}`. The cache is cleared on every settings page load so the UI always reflects current state. Filter hook invocations on other pages read from the cache without making API requests.
 
 ## Development
 
-No build step. Install as a regular plugin or drop `ai-connector-priority.php` into `mu-plugins/`.
+No build step. Install as a regular plugin, or drop `ai-connector-priority.php` into `mu-plugins/` (note: mu-plugins do not receive automatic updates through the WordPress admin).
 
 ### Commands
 
