@@ -39,7 +39,35 @@ class DeveloperModeTest extends TestCase {
 		$this->assertContains( 'editorial-updates', $map['text'] );
 		$this->assertContains( 'content-resizing', $map['text'] );
 		$this->assertContains( 'meta-description', $map['text'] );
-		$this->assertContains( 'comment-moderation', $map['text'] );
+		$this->assertContains( 'content-classification', $map['text'] );
+	}
+
+	public function test_text_task_does_not_include_comment_moderation(): void {
+		// comment-moderation uses using_model_preference() directly, not
+		// set_provider_model_preference(), so it cannot have Developer Mode overrides.
+		$map = \AiConnectorPriority\get_task_feature_map();
+
+		$this->assertNotContains( 'comment-moderation', $map['text'] );
+	}
+
+	public function test_task_is_fully_overridden_when_all_its_features_are_overridden(): void {
+		// image has one feature; when it is overridden the task is fully overridden.
+		$GLOBALS['_test_wp_options']['wpai_feature_image-generation_field_developer'] = [
+			'provider' => 'openai',
+			'model'    => 'gpt-image-2',
+		];
+
+		$this->assertTrue( \AiConnectorPriority\is_task_fully_overridden( 'image' ) );
+	}
+
+	public function test_task_is_not_fully_overridden_when_only_some_features_are_overridden(): void {
+		// text has many features; overriding one does not fully override the task.
+		$GLOBALS['_test_wp_options']['wpai_feature_title-generation_field_developer'] = [
+			'provider' => 'anthropic',
+			'model'    => 'claude-sonnet-4-6',
+		];
+
+		$this->assertFalse( \AiConnectorPriority\is_task_fully_overridden( 'text' ) );
 	}
 
 	public function test_image_task_includes_image_generation_feature(): void {

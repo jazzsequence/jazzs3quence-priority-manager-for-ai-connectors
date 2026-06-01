@@ -266,11 +266,34 @@ function get_task_feature_map(): array {
 			'editorial-updates',
 			'content-resizing',
 			'meta-description',
-			'comment-moderation',
+			'content-classification',
 		],
 		'image'  => [ 'image-generation' ],
 		'vision' => [ 'alt-text-generation' ],
 	];
+}
+
+/**
+ * Returns true when every feature in a task type has a Developer Mode override,
+ * meaning the provider selector for that task has no effect at all.
+ *
+ * @param string $task Task type: 'text', 'image', or 'vision'.
+ * @return bool
+ */
+function is_task_fully_overridden( string $task ): bool {
+	$feature_ids = get_task_feature_map()[ $task ] ?? [];
+
+	if ( empty( $feature_ids ) ) {
+		return false;
+	}
+
+	foreach ( $feature_ids as $feature_id ) {
+		if ( empty( get_option( "wpai_feature_{$feature_id}_field_developer", [] ) ) ) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 /**
@@ -415,12 +438,10 @@ function render_page(): void {
 				<h2><?php echo esc_html( $info['label'] ); ?></h2>
 				<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
 
-				<?php if ( in_array( $task, $overridden_tasks, true ) ) : ?>
-					<div class="notice notice-info inline">
-						<p><?php esc_html_e( 'Some capabilities for this task type may be overridden by the AI plugin\'s Developer Mode settings.', 'ai-connector-priority' ); ?></p>
-					</div>
-				<?php endif; ?>
-
+				<?php
+				$task_overridden = in_array( $task, $overridden_tasks, true );
+				$task_disabled   = $task_overridden && is_task_fully_overridden( $task );
+				?>
 				<table class="form-table" role="presentation">
 					<tbody>
 						<tr>
@@ -428,13 +449,22 @@ function render_page(): void {
 								<label for="<?php echo esc_attr( $field_id ); ?>"><?php esc_html_e( 'Provider', 'ai-connector-priority' ); ?></label>
 							</th>
 							<td>
-								<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>">
+								<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>" <?php disabled( $task_disabled ); ?>>
 									<?php foreach ( $providers as $value => $label ) : ?>
 										<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $priorities[ $task ], $value ); ?>>
 											<?php echo esc_html( $label ); ?>
 										</option>
 									<?php endforeach; ?>
 								</select>
+								<?php if ( $task_overridden ) : ?>
+									<p class="description">
+										<?php if ( $task_disabled ) : ?>
+											<?php esc_html_e( 'Overridden by the AI plugin\'s Developer Mode — this selection has no effect.', 'ai-connector-priority' ); ?>
+										<?php else : ?>
+											<?php esc_html_e( 'Some features in this task type may be overridden by the AI plugin\'s Developer Mode settings.', 'ai-connector-priority' ); ?>
+										<?php endif; ?>
+									</p>
+								<?php endif; ?>
 							</td>
 						</tr>
 					</tbody>
