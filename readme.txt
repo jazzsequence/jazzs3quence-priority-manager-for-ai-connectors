@@ -56,6 +56,8 @@ The settings page will show a notice next to any task type that has at least one
 * Only providers whose plugin is actually active are shown in the settings UI; a notice is displayed when no provider plugins are active
 * The plugin no longer hard-codes Anthropic, Google, and OpenAI — any registered connector appears in the selection automatically
 * Added migration for 1.0.x saved settings (ordered array format) to the new single-provider format
+* Settings page now shows an inline notice when the AI plugin's Developer Mode is overriding the provider selection for one or more features in a task type; the selector is disabled when the entire task type is overridden
+* Added a Configure link to the plugin entry on the Plugins screen
 
 = 1.0.0 =
 * Initial release
