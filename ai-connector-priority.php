@@ -462,13 +462,13 @@ function render_page(): void {
 									<?php endforeach; ?>
 								</select>
 								<?php if ( $task_overridden ) : ?>
-									<p class="description">
+									<span class="description">
 										<?php if ( $task_disabled ) : ?>
 											<?php esc_html_e( 'Overridden by the AI plugin\'s Developer Mode — this selection has no effect.', 'ai-connector-priority' ); ?>
 										<?php else : ?>
 											<?php esc_html_e( 'Some features in this task type may be overridden by the AI plugin\'s Developer Mode settings.', 'ai-connector-priority' ); ?>
 										<?php endif; ?>
-									</p>
+									</span>
 								<?php endif; ?>
 							</td>
 						</tr>
