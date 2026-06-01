@@ -148,6 +148,31 @@ class DeveloperModeTest extends TestCase {
 		$this->assertNotContains( 'text', $overridden );
 	}
 
+	// -------------------------------------------------------------------------
+	// get_developer_mode_overrides_by_task()
+	// -------------------------------------------------------------------------
+
+	public function test_get_overrides_by_task_returns_empty_when_no_overrides(): void {
+		$overrides = \AiConnectorPriority\get_developer_mode_overrides_by_task();
+
+		$this->assertEmpty( $overrides );
+	}
+
+	public function test_get_overrides_by_task_returns_feature_ids_keyed_by_task(): void {
+		$GLOBALS['_test_wp_options']['wpai_feature_title-generation_field_developer']    = [ 'provider' => 'anthropic', 'model' => 'claude-test' ];
+		$GLOBALS['_test_wp_options']['wpai_feature_excerpt-generation_field_developer']  = [ 'provider' => 'anthropic', 'model' => 'claude-test' ];
+		$GLOBALS['_test_wp_options']['wpai_feature_image-generation_field_developer']    = [ 'provider' => 'openai', 'model' => 'gpt-image-2' ];
+
+		$overrides = \AiConnectorPriority\get_developer_mode_overrides_by_task();
+
+		$this->assertArrayHasKey( 'text', $overrides );
+		$this->assertContains( 'title-generation', $overrides['text'] );
+		$this->assertContains( 'excerpt-generation', $overrides['text'] );
+		$this->assertArrayHasKey( 'image', $overrides );
+		$this->assertContains( 'image-generation', $overrides['image'] );
+		$this->assertArrayNotHasKey( 'vision', $overrides );
+	}
+
 	public function test_text_task_returns_at_most_once_even_with_multiple_feature_overrides(): void {
 		$GLOBALS['_test_wp_options']['wpai_feature_title-generation_field_developer']  = [
 			'provider' => 'anthropic',

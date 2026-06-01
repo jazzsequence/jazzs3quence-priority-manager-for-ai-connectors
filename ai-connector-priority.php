@@ -302,6 +302,25 @@ function is_task_fully_overridden( string $task ): bool {
 }
 
 /**
+ * Returns all active Developer Mode overrides grouped by task type.
+ *
+ * @return array<string, string[]> Task type => list of overridden feature IDs.
+ */
+function get_developer_mode_overrides_by_task(): array {
+	$result = [];
+
+	foreach ( get_task_feature_map() as $task => $feature_ids ) {
+		foreach ( $feature_ids as $feature_id ) {
+			if ( ! empty( get_option( "wpai_feature_{$feature_id}_field_developer", [] ) ) ) {
+				$result[ $task ][] = $feature_id;
+			}
+		}
+	}
+
+	return $result;
+}
+
+/**
  * Returns the task types for which at least one feature has a Developer Mode
  * override configured in the AI plugin.
  *
@@ -338,6 +357,25 @@ add_action(
 			PAGE_SLUG,
 			__NAMESPACE__ . '\render_page'
 		);
+	}
+);
+
+add_action(
+	'admin_head',
+	static function (): void {
+		$screen = get_current_screen();
+		if ( ! $screen || 'settings_page_' . PAGE_SLUG !== $screen->id ) {
+			return;
+		}
+		?>
+		<style>
+			.aicp-developer-mode-notice {
+				font-style: italic;
+				color: #cc0000;
+				margin: 0 1em;
+			}
+		</style>
+		<?php
 	}
 );
 
@@ -396,9 +434,9 @@ function render_page(): void {
 		$saved = save_priorities();
 	}
 
-	$active              = get_active_connectors();
-	$priorities          = get_priorities();
-	$overridden_tasks    = get_developer_mode_overridden_tasks();
+	$active           = get_active_connectors();
+	$priorities       = get_priorities();
+	$overrides_by_task = get_developer_mode_overrides_by_task();
 	$tasks      = [
 		'text'   => [
 			'label'       => __( 'Text Generation', 'ai-connector-priority' ),
@@ -444,8 +482,9 @@ function render_page(): void {
 				<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
 
 				<?php
-				$task_overridden = in_array( $task, $overridden_tasks, true );
-				$task_disabled   = $task_overridden && is_task_fully_overridden( $task );
+				$overridden_features = $overrides_by_task[ $task ] ?? [];
+				$task_overridden     = ! empty( $overridden_features );
+				$task_disabled       = $task_overridden && is_task_fully_overridden( $task );
 				?>
 				<table class="form-table" role="presentation">
 					<tbody>
@@ -462,11 +501,14 @@ function render_page(): void {
 									<?php endforeach; ?>
 								</select>
 								<?php if ( $task_overridden ) : ?>
-									<span class="description">
+									<span class="description aicp-developer-mode-notice">
 										<?php if ( $task_disabled ) : ?>
 											<?php esc_html_e( 'Overridden by the AI plugin\'s Developer Mode — this selection has no effect.', 'ai-connector-priority' ); ?>
 										<?php else : ?>
-											<?php esc_html_e( 'Some features in this task type may be overridden by the AI plugin\'s Developer Mode settings.', 'ai-connector-priority' ); ?>
+											<?php
+											echo esc_html__( 'Overridden by Developer Mode for:', 'ai-connector-priority' ) . ' ';
+											echo esc_html( implode( ', ', $overridden_features ) ) . '.';
+											?>
 										<?php endif; ?>
 									</span>
 								<?php endif; ?>
