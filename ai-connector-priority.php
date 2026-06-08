@@ -20,8 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const OPTION_KEY = 'ai_connector_priority';
-const PAGE_SLUG  = 'ai-connector-priority';
+const OPTION_KEY = 'aicp_connector_priority';
+const PAGE_SLUG  = 'aicp-connector-priority';
 
 /**
  * Returns registered AI provider connectors from the WordPress AI plugin.
@@ -444,8 +444,8 @@ function render_page(): void {
 	$saved = false;
 
 	if (
-		isset( $_POST['_cc_ai_priority_nonce'] ) &&
-		wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_cc_ai_priority_nonce'] ) ), 'cc_ai_priority_save' )
+		isset( $_POST['_aicp_priority_nonce'] ) &&
+		wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_aicp_priority_nonce'] ) ), 'aicp_priority_save' )
 	) {
 		$saved = save_priorities();
 	}
@@ -484,7 +484,7 @@ function render_page(): void {
 			</div>
 		<?php else : ?>
 		<form method="post">
-			<?php wp_nonce_field( 'cc_ai_priority_save', '_cc_ai_priority_nonce' ); ?>
+			<?php wp_nonce_field( 'aicp_priority_save', '_aicp_priority_nonce' ); ?>
 
 			<?php foreach ( $tasks as $task => $info ) : ?>
 				<?php
@@ -492,7 +492,7 @@ function render_page(): void {
 				if ( empty( $providers ) ) {
 					continue;
 				}
-				$field_id = 'cc_ai_' . $task;
+				$field_id = 'aicp_' . $task;
 				?>
 				<h2><?php echo esc_html( $info['label'] ); ?></h2>
 				<p class="description"><?php echo esc_html( $info['description'] ); ?></p>
@@ -509,7 +509,7 @@ function render_page(): void {
 								<label for="<?php echo esc_attr( $field_id ); ?>"><?php esc_html_e( 'Provider', 'ai-connector-priority' ); ?></label>
 							</th>
 							<td>
-								<select name="cc_ai_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>" <?php disabled( $task_disabled ); ?>>
+								<select name="aicp_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>" <?php disabled( $task_disabled ); ?>>
 									<?php foreach ( $providers as $value => $label ) : ?>
 										<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $priorities[ $task ], $value ); ?>>
 											<?php echo esc_html( $label ); ?>
@@ -548,7 +548,7 @@ function render_page(): void {
  */
 function save_priorities(): bool {
 	// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce verified by caller.
-	$raw   = isset( $_POST['cc_ai_priority'] ) && is_array( $_POST['cc_ai_priority'] ) ? wp_unslash( $_POST['cc_ai_priority'] ) : [];
+	$raw   = isset( $_POST['aicp_priority'] ) && is_array( $_POST['aicp_priority'] ) ? wp_unslash( $_POST['aicp_priority'] ) : [];
 	$clean = [];
 
 	foreach ( [ 'text', 'image', 'vision' ] as $task ) {
