@@ -3,7 +3,7 @@
  * Plugin Name:       AI Connector Priority
  * Plugin URI:        https://github.com/jazzsequence/ai-connector-priority
  * Description:       Choose which AI provider to use for each task type (text, image, vision).
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 7.0
  * Requires PHP:      8.2
  * Requires Plugins:  ai

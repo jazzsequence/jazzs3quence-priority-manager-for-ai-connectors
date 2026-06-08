@@ -4,7 +4,7 @@ Tags: ai, llm, connectors, providers, priority
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -45,6 +45,9 @@ When Developer Mode has a provider and model set for a specific feature, that fe
 The settings page will show a notice next to any task type that has at least one feature with a Developer Mode override active.
 
 == Changelog ==
+
+= 1.1.1 =
+* Normalized internal prefixes to `aicp_` throughout — option key, page slug, nonce action/field, and form field names
 
 = 1.1.0 =
 * Simplified to a single provider selection per task type — the plugin now correctly reflects that the AI plugin selects one provider per request, not a sequential fallback chain
