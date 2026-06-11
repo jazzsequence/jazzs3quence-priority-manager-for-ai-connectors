@@ -1,5 +1,5 @@
 {
-    "name": "jazzsequence/ai-connector-priority",
+    "name": "jazzsequence/jazzs3quence-priority-manager-for-ai-connectors",
     "type": "wordpress-plugin",
     "description": "Admin settings page to choose which AI provider to use for each task type (text, image, vision). Requires the WordPress AI plugin.",
     "license": "MIT",
