@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       jazzs3quence Priority Manager for AI Connectors
- * Plugin URI:        https://github.com/jazzsequence/ai-connector-priority
+ * Plugin URI:        https://github.com/jazzsequence/jazzs3quence-priority-manager-for-ai-connectors
  * Description:       Choose which AI provider to use for each task type (text, image, vision).
  * Version:           1.2.0
  * Requires at least: 7.0
