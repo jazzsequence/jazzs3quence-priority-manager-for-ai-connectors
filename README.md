@@ -24,7 +24,7 @@ Install from the [WordPress plugin directory](https://wordpress.org/plugins/jazz
 Alternatively, install via Composer:
 
 ```bash
-composer require jazzsequence/priority-manager-for-ai-connectors
+composer require jazzsequence/ai-connector-priority
 ```
 
 Or drop the plugin file into your `mu-plugins` directory. Note that mu-plugins do not receive automatic updates through the WordPress admin.
