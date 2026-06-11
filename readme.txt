@@ -1,10 +1,10 @@
-=== AI Connector Priority ===
+=== jazzs3quence Priority Manager for AI Connectors ===
 Contributors: jazzs3quence
 Tags: ai, llm, connectors, providers, priority
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -26,7 +26,7 @@ Requires the [AI plugin](https://wordpress.org/plugins/ai/) and at least one act
 
 == Installation ==
 
-1. Search for "AI Connector Priority" in the WordPress plugins screen and click **Install Now**, or upload the plugin folder to `/wp-content/plugins/`
+1. Search for "jazzs3quence Priority Manager for AI Connectors" in the WordPress plugins screen and click **Install Now**, or upload the plugin folder to `/wp-content/plugins/`
 2. Activate the plugin through the Plugins screen
 3. Go to **Settings → AI Priority** to configure your preferred provider
 
@@ -45,6 +45,9 @@ When Developer Mode has a provider and model set for a specific feature, that fe
 The settings page will show a notice next to any task type that has at least one feature with a Developer Mode override active.
 
 == Changelog ==
+
+= 1.2.0 =
+* Renamed plugin to jazzs3quence Priority Manager for AI Connectors; updated slug, namespace (`Jazzs3quence\AIPriorityManager`), and Packagist package name
 
 = 1.1.1 =
 * Normalized internal prefixes to `aicp_` throughout — option key, page slug, nonce action/field, and form field names
