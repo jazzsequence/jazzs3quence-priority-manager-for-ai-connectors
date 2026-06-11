@@ -1,9 +1,9 @@
 # jazzs3quence Priority Manager for AI Connectors
 
 ![WordPress 7.0+](https://img.shields.io/badge/WordPress-7.0%2B-0073aa?logo=wordpress&logoColor=white)
-![GitHub Release](https://img.shields.io/github/v/release/jazzsequence/priority-manager-for-ai-connectors)
-![GitHub License](https://img.shields.io/github/license/jazzsequence/priority-manager-for-ai-connectors)
-[![CI](https://github.com/jazzsequence/priority-manager-for-ai-connectors/actions/workflows/ci.yml/badge.svg)](https://github.com/jazzsequence/priority-manager-for-ai-connectors/actions/workflows/ci.yml)
+![GitHub Release](https://img.shields.io/github/v/release/jazzsequence/jazzs3quence-priority-manager-for-ai-connectors)
+![GitHub License](https://img.shields.io/github/license/jazzsequence/jazzs3quence-priority-manager-for-ai-connectors)
+[![CI](https://github.com/jazzsequence/jazzs3quence-priority-manager-for-ai-connectors/actions/workflows/ci.yml/badge.svg)](https://github.com/jazzsequence/jazzs3quence-priority-manager-for-ai-connectors/actions/workflows/ci.yml)
 
 A WordPress plugin that adds an admin settings page to configure which AI provider is used for each task type — text generation, image generation, and vision — when multiple providers are connected.
 
