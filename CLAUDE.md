@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Single-file WordPress plugin (`ai-connector-priority.php`) that lets users choose which AI provider the WordPress AI plugin uses for each task type (text, image, vision). Everything — constants, functions, hooks, and the admin settings page — lives in that one file under the `AiConnectorPriority` namespace.
+Single-file WordPress plugin (`jazzs3quence-priority-manager-for-ai-connectors.php`) that lets users choose which AI provider the WordPress AI plugin uses for each task type (text, image, vision). Everything — constants, functions, hooks, and the admin settings page — lives in that one file under the `Jazzs3quence\AIPriorityManager` namespace.
 
 ## How the AI plugin selects a provider
 
@@ -25,7 +25,7 @@ The plugin's data flow:
 1. `get_active_connectors()` calls `\WordPress\AI\get_ai_connectors(true)`, which returns only providers whose plugin is currently active (checked via `is_plugin_active()` for built-in providers; always active for custom providers with no plugin file key).
 2. `get_provider_supported_tasks( $provider_id )` queries the AiClient registry directly via `findProviderModelsMetadataForSupport()` to determine which task types a provider supports. Results are cached in WordPress transients (24h TTL). Providers without credentials fall back to `['text', 'vision']` — never image, since image generation must be confirmed. The cache is cleared on every settings page load and on plugin activation/deactivation.
 3. `get_providers_for_task( $task )` iterates active connectors and includes only those whose supported tasks (from step 2) contain the given task.
-4. `get_priorities()` reads `wp_options` key `ai_connector_priority` (constant `OPTION_KEY`). Returns a single provider ID per task, defaulting to the first active provider for that task. Migrates the 1.0.x ordered-array format automatically.
+4. `get_priorities()` reads `wp_options` key `aicp_connector_priority` (constant `OPTION_KEY`). Returns a single provider ID per task, defaulting to the first active provider for that task. Migrates the 1.0.x ordered-array format automatically.
 5. `reorder_model_list( $models, $task )` puts the saved preferred provider's models at the front of the incoming list, drops models for inactive providers, and leaves all others in their original order.
 6. Three named filter callbacks (`reorder_models_for_text`, `reorder_models_for_image`, `reorder_models_for_vision`) attach `reorder_model_list()` to the `wpai_preferred_*_models` filters.
 
@@ -63,7 +63,7 @@ Provider task support comes from the AiClient registry, not from the `wpai_prefe
 
 ## Development
 
-No build step. Install as a regular plugin, or drop `ai-connector-priority.php` into `mu-plugins/` (note: mu-plugins do not receive automatic updates through the WordPress admin).
+Install as a regular plugin, or drop `jazzs3quence-priority-manager-for-ai-connectors.php` into `mu-plugins/` (note: mu-plugins do not receive automatic updates through the WordPress admin).
 
 ### Commands
 

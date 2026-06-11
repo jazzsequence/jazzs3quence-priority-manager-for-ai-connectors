@@ -1,9 +1,9 @@
-# AI Connector Priority
+# jazzs3quence Priority Manager for AI Connectors
 
 ![WordPress 7.0+](https://img.shields.io/badge/WordPress-7.0%2B-0073aa?logo=wordpress&logoColor=white)
-![GitHub Release](https://img.shields.io/github/v/release/jazzsequence/ai-connector-priority)
-![GitHub License](https://img.shields.io/github/license/jazzsequence/ai-connector-priority)
-[![CI](https://github.com/jazzsequence/ai-connector-priority/actions/workflows/ci.yml/badge.svg)](https://github.com/jazzsequence/ai-connector-priority/actions/workflows/ci.yml)
+![GitHub Release](https://img.shields.io/github/v/release/jazzsequence/priority-manager-for-ai-connectors)
+![GitHub License](https://img.shields.io/github/license/jazzsequence/priority-manager-for-ai-connectors)
+[![CI](https://github.com/jazzsequence/priority-manager-for-ai-connectors/actions/workflows/ci.yml/badge.svg)](https://github.com/jazzsequence/priority-manager-for-ai-connectors/actions/workflows/ci.yml)
 
 A WordPress plugin that adds an admin settings page to configure which AI provider is used for each task type — text generation, image generation, and vision — when multiple providers are connected.
 
@@ -16,7 +16,7 @@ A WordPress plugin that adds an admin settings page to configure which AI provid
 
 ## Installation
 
-Install from the [WordPress plugin directory](https://wordpress.org/plugins/ai-connector-priority/), or install manually:
+Install from the [WordPress plugin directory](https://wordpress.org/plugins/jazzs3quence-priority-manager-for-ai-connectors/), or install manually:
 
 1. Upload the plugin folder to `/wp-content/plugins/`
 2. Activate through the **Plugins** screen
@@ -24,10 +24,10 @@ Install from the [WordPress plugin directory](https://wordpress.org/plugins/ai-c
 Alternatively, install via Composer:
 
 ```bash
-composer require jazzsequence/ai-connector-priority
+composer require jazzs3quence/priority-manager-for-ai-connectors
 ```
 
-Or drop `ai-connector-priority.php` into your `mu-plugins` directory. Note that mu-plugins do not receive automatic updates through the WordPress admin.
+Or drop the plugin file into your `mu-plugins` directory. Note that mu-plugins do not receive automatic updates through the WordPress admin.
 
 ## Usage
 
@@ -61,7 +61,7 @@ The settings page shows a notice next to any task type that has at least one fea
 
 ## Option key
 
-Settings are stored in `wp_options` under `ai_connector_priority`.
+Settings are stored in `wp_options` under `aicp_connector_priority`.
 
 ## License
 
