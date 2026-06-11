@@ -13,7 +13,7 @@
     </testsuites>
     <filter>
         <whitelist>
-            <file>ai-connector-priority.php</file>
+            <file>jazzs3quence-priority-manager-for-ai-connectors.php</file>
         </whitelist>
     </filter>
 </phpunit>

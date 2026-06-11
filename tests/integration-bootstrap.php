@@ -64,7 +64,7 @@ namespace {
 	require_once $_tests_dir . '/includes/functions.php';
 
 	function aicp_manually_load_plugin(): void {
-		require dirname( __DIR__ ) . '/ai-connector-priority.php';
+		require dirname( __DIR__ ) . '/jazzs3quence-priority-manager-for-ai-connectors.php';
 	}
 	tests_add_filter( 'muplugins_loaded', 'aicp_manually_load_plugin' );
 

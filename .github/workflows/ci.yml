@@ -93,11 +93,11 @@ jobs:
             --exclude='vendor' \
             --exclude='tests' \
             --exclude='bin' \
-            . /tmp/wordpress/wp-content/plugins/ai-connector-priority/
+            . /tmp/wordpress/wp-content/plugins/jazzs3quence-priority-manager-for-ai-connectors/
 
       - name: WordPress.org Plugin Check
         run: |
-          RESULTS=$(wp plugin check ai-connector-priority \
+          RESULTS=$(wp plugin check jazzs3quence-priority-manager-for-ai-connectors \
             --path=/tmp/wordpress \
             --exclude-directories=vendor,tests,bin,.github \
             --exclude-files=.gitignore,.distignore,CLAUDE.md \
