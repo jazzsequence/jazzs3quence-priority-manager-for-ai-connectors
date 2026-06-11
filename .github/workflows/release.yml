@@ -18,7 +18,7 @@ jobs:
 
       - name: Build distributable artifact
         run: |
-          PLUGIN_SLUG="ai-connector-priority"
+          PLUGIN_SLUG="jazzs3quence-priority-manager-for-ai-connectors"
           VERSION="${{ github.event.release.tag_name }}"
           ZIP_NAME="${PLUGIN_SLUG}-${VERSION}.zip"
 
@@ -33,5 +33,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.event.release.tag_name }}" \
-            "dist/ai-connector-priority-${{ github.event.release.tag_name }}.zip" \
+            "dist/jazzs3quence-priority-manager-for-ai-connectors-${{ github.event.release.tag_name }}.zip" \
             --clobber
