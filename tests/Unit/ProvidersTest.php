@@ -3,7 +3,7 @@
  * Unit tests for connector discovery and provider-for-task lookup.
  */
 
-namespace AiConnectorPriority\Tests\Unit;
+namespace Jazzs3quence\AIPriorityManager\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
@@ -36,7 +36,7 @@ class ProvidersTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_returns_connectors_from_ai_plugin(): void {
-		$connectors = \AiConnectorPriority\get_active_connectors();
+		$connectors = \Jazzs3quence\AIPriorityManager\get_active_connectors();
 
 		$this->assertArrayHasKey( 'anthropic', $connectors );
 		$this->assertArrayHasKey( 'google', $connectors );
@@ -46,7 +46,7 @@ class ProvidersTest extends TestCase {
 	public function test_returns_empty_when_no_connectors_registered(): void {
 		$GLOBALS['_test_ai_connectors'] = [];
 
-		$this->assertEmpty( \AiConnectorPriority\get_active_connectors() );
+		$this->assertEmpty( \Jazzs3quence\AIPriorityManager\get_active_connectors() );
 	}
 
 	public function test_only_returns_connectors_whose_plugin_is_active(): void {
@@ -59,7 +59,7 @@ class ProvidersTest extends TestCase {
 			'google' => [ 'name' => 'Google (Gemini)' ],
 		];
 
-		$connectors = \AiConnectorPriority\get_active_connectors();
+		$connectors = \Jazzs3quence\AIPriorityManager\get_active_connectors();
 
 		$this->assertArrayHasKey( 'google', $connectors );
 		$this->assertArrayNotHasKey( 'anthropic', $connectors );
@@ -73,7 +73,7 @@ class ProvidersTest extends TestCase {
 	public function test_returns_tasks_from_transient_cache(): void {
 		$GLOBALS['_test_transients']['aicp_tasks_anthropic'] = [ 'text', 'vision' ];
 
-		$tasks = \AiConnectorPriority\get_provider_supported_tasks( 'anthropic' );
+		$tasks = \Jazzs3quence\AIPriorityManager\get_provider_supported_tasks( 'anthropic' );
 
 		$this->assertContains( 'text', $tasks );
 		$this->assertContains( 'vision', $tasks );
@@ -85,7 +85,7 @@ class ProvidersTest extends TestCase {
 		// Image generation is a specialized capability — the safe default excludes it.
 		unset( $GLOBALS['_test_transients']['aicp_tasks_newprovider'] );
 
-		$tasks = \AiConnectorPriority\get_provider_supported_tasks( 'newprovider' );
+		$tasks = \Jazzs3quence\AIPriorityManager\get_provider_supported_tasks( 'newprovider' );
 
 		$this->assertContains( 'text', $tasks );
 		$this->assertContains( 'vision', $tasks );
@@ -95,7 +95,7 @@ class ProvidersTest extends TestCase {
 	public function test_caches_result_in_transient(): void {
 		unset( $GLOBALS['_test_transients']['aicp_tasks_newprovider'] );
 
-		\AiConnectorPriority\get_provider_supported_tasks( 'newprovider' );
+		\Jazzs3quence\AIPriorityManager\get_provider_supported_tasks( 'newprovider' );
 
 		// Result should have been stored in the transient.
 		$this->assertArrayHasKey( 'aicp_tasks_newprovider', $GLOBALS['_test_transients'] );
@@ -106,7 +106,7 @@ class ProvidersTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_text_task_shows_all_active_providers_that_support_text(): void {
-		$providers = \AiConnectorPriority\get_providers_for_task( 'text' );
+		$providers = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'text' );
 
 		$this->assertArrayHasKey( 'anthropic', $providers );
 		$this->assertArrayHasKey( 'google', $providers );
@@ -115,7 +115,7 @@ class ProvidersTest extends TestCase {
 
 	public function test_image_task_excludes_providers_that_dont_support_image(): void {
 		// Anthropic's cached capabilities: ['text', 'vision'] — no image.
-		$providers = \AiConnectorPriority\get_providers_for_task( 'image' );
+		$providers = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'image' );
 
 		$this->assertArrayNotHasKey( 'anthropic', $providers );
 		$this->assertArrayHasKey( 'google', $providers );
@@ -128,13 +128,13 @@ class ProvidersTest extends TestCase {
 		$GLOBALS['_test_ai_connectors']['deepseek'] = [ 'name' => 'DeepSeek' ];
 		unset( $GLOBALS['_test_transients']['aicp_tasks_deepseek'] );
 
-		$providers = \AiConnectorPriority\get_providers_for_task( 'image' );
+		$providers = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'image' );
 
 		$this->assertArrayNotHasKey( 'deepseek', $providers );
 	}
 
 	public function test_vision_task_shows_providers_that_support_vision(): void {
-		$providers = \AiConnectorPriority\get_providers_for_task( 'vision' );
+		$providers = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'vision' );
 
 		$this->assertArrayHasKey( 'anthropic', $providers );
 		$this->assertArrayHasKey( 'google', $providers );
@@ -146,7 +146,7 @@ class ProvidersTest extends TestCase {
 			'google' => [ 'name' => 'Google (Gemini)' ],
 		];
 
-		$providers = \AiConnectorPriority\get_providers_for_task( 'text' );
+		$providers = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'text' );
 
 		$this->assertArrayHasKey( 'google', $providers );
 		$this->assertArrayNotHasKey( 'anthropic', $providers );
@@ -156,11 +156,11 @@ class ProvidersTest extends TestCase {
 	public function test_returns_empty_when_no_connectors_active(): void {
 		$GLOBALS['_test_ai_connectors'] = [];
 
-		$this->assertEmpty( \AiConnectorPriority\get_providers_for_task( 'text' ) );
+		$this->assertEmpty( \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'text' ) );
 	}
 
 	public function test_providers_have_display_labels(): void {
-		$providers = \AiConnectorPriority\get_providers_for_task( 'text' );
+		$providers = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'text' );
 
 		foreach ( $providers as $label ) {
 			$this->assertIsString( $label );
@@ -175,9 +175,9 @@ class ProvidersTest extends TestCase {
 		$GLOBALS['_test_ai_connectors']['deepseek'] = [ 'name' => 'DeepSeek' ];
 		unset( $GLOBALS['_test_transients']['aicp_tasks_deepseek'] );
 
-		$text   = \AiConnectorPriority\get_providers_for_task( 'text' );
-		$image  = \AiConnectorPriority\get_providers_for_task( 'image' );
-		$vision = \AiConnectorPriority\get_providers_for_task( 'vision' );
+		$text   = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'text' );
+		$image  = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'image' );
+		$vision = \Jazzs3quence\AIPriorityManager\get_providers_for_task( 'vision' );
 
 		$this->assertArrayHasKey( 'deepseek', $text );
 		$this->assertArrayNotHasKey( 'deepseek', $image );

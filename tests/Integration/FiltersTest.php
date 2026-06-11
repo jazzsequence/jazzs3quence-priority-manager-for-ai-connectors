@@ -3,12 +3,12 @@
  * Integration tests verifying filter registration and option storage with real WordPress.
  */
 
-namespace AiConnectorPriority\Tests\Integration;
+namespace Jazzs3quence\AIPriorityManager\Tests\Integration;
 
 class FiltersTest extends \WP_UnitTestCase {
 
 	protected function tearDown(): void {
-		delete_option( \AiConnectorPriority\OPTION_KEY );
+		delete_option( \Jazzs3quence\AIPriorityManager\OPTION_KEY );
 		parent::tearDown();
 	}
 
@@ -17,17 +17,17 @@ class FiltersTest extends \WP_UnitTestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_plugin_action_links_filter_is_registered(): void {
-		$basename = plugin_basename( dirname( __DIR__, 2 ) . '/ai-connector-priority.php' );
+		$basename = plugin_basename( dirname( __DIR__, 2 ) . '/jazzs3quence-priority-manager-for-ai-connectors.php' );
 		$this->assertTrue( (bool) has_filter( 'plugin_action_links_' . $basename ) );
 	}
 
 	public function test_plugin_action_links_includes_configure_link(): void {
-		$basename = plugin_basename( dirname( __DIR__, 2 ) . '/ai-connector-priority.php' );
+		$basename = plugin_basename( dirname( __DIR__, 2 ) . '/jazzs3quence-priority-manager-for-ai-connectors.php' );
 		$links    = apply_filters( 'plugin_action_links_' . $basename, [] );
 
 		$this->assertArrayHasKey( 'configure', $links );
 		$this->assertStringContainsString( 'options-general.php', $links['configure'] );
-		$this->assertStringContainsString( \AiConnectorPriority\PAGE_SLUG, $links['configure'] );
+		$this->assertStringContainsString( \Jazzs3quence\AIPriorityManager\PAGE_SLUG, $links['configure'] );
 	}
 
 	public function test_text_models_filter_is_registered(): void {
@@ -76,7 +76,7 @@ class FiltersTest extends \WP_UnitTestCase {
 
 	public function test_get_priorities_uses_wp_options(): void {
 		update_option(
-			\AiConnectorPriority\OPTION_KEY,
+			\Jazzs3quence\AIPriorityManager\OPTION_KEY,
 			[
 				'text'   => 'openai',
 				'image'  => 'google',
@@ -84,7 +84,7 @@ class FiltersTest extends \WP_UnitTestCase {
 			]
 		);
 
-		$priorities = \AiConnectorPriority\get_priorities();
+		$priorities = \Jazzs3quence\AIPriorityManager\get_priorities();
 
 		$this->assertSame( 'openai', $priorities['text'] );
 		$this->assertSame( 'google', $priorities['image'] );
@@ -92,7 +92,7 @@ class FiltersTest extends \WP_UnitTestCase {
 
 	public function test_get_priorities_migrates_old_array_format(): void {
 		update_option(
-			\AiConnectorPriority\OPTION_KEY,
+			\Jazzs3quence\AIPriorityManager\OPTION_KEY,
 			[
 				'text'   => [ 'openai', 'google', 'anthropic' ],
 				'image'  => [ 'google', 'openai' ],
@@ -100,7 +100,7 @@ class FiltersTest extends \WP_UnitTestCase {
 			]
 		);
 
-		$priorities = \AiConnectorPriority\get_priorities();
+		$priorities = \Jazzs3quence\AIPriorityManager\get_priorities();
 
 		$this->assertSame( 'openai', $priorities['text'] );
 		$this->assertSame( 'google', $priorities['image'] );
@@ -108,7 +108,7 @@ class FiltersTest extends \WP_UnitTestCase {
 
 	public function test_saved_provider_changes_filter_output(): void {
 		update_option(
-			\AiConnectorPriority\OPTION_KEY,
+			\Jazzs3quence\AIPriorityManager\OPTION_KEY,
 			[ 'text' => 'openai' ]
 		);
 

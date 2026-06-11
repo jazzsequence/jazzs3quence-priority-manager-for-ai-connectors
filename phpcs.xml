@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
-<ruleset name="AI Connector Priority">
-    <description>Coding standards for ai-connector-priority plugin.</description>
+<ruleset name="jazzs3quence Priority Manager for AI Connectors">
+    <description>Coding standards for jazzs3quence-priority-manager-for-ai-connectors plugin.</description>
 
     <rule ref="Pantheon-WP"/>
 
     <rule ref="WordPress.WP.I18n">
         <properties>
             <property name="text_domain" type="array">
-                <element value="ai-connector-priority"/>
+                <element value="jazzs3quence-priority-manager-for-ai-connectors"/>
             </property>
         </properties>
     </rule>
 
-    <file>ai-connector-priority.php</file>
+    <file>jazzs3quence-priority-manager-for-ai-connectors.php</file>
 
     <exclude-pattern>vendor/*</exclude-pattern>
     <exclude-pattern>tests/*</exclude-pattern>

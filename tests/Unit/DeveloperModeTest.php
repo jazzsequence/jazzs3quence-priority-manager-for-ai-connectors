@@ -3,7 +3,7 @@
  * Unit tests for Developer Mode override detection.
  */
 
-namespace AiConnectorPriority\Tests\Unit;
+namespace Jazzs3quence\AIPriorityManager\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
@@ -22,7 +22,7 @@ class DeveloperModeTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_task_feature_map_has_all_three_task_keys(): void {
-		$map = \AiConnectorPriority\get_task_feature_map();
+		$map = \Jazzs3quence\AIPriorityManager\get_task_feature_map();
 
 		$this->assertArrayHasKey( 'text', $map );
 		$this->assertArrayHasKey( 'image', $map );
@@ -30,7 +30,7 @@ class DeveloperModeTest extends TestCase {
 	}
 
 	public function test_text_task_includes_known_features(): void {
-		$map = \AiConnectorPriority\get_task_feature_map();
+		$map = \Jazzs3quence\AIPriorityManager\get_task_feature_map();
 
 		$this->assertContains( 'title-generation', $map['text'] );
 		$this->assertContains( 'excerpt-generation', $map['text'] );
@@ -45,7 +45,7 @@ class DeveloperModeTest extends TestCase {
 	public function test_text_task_does_not_include_comment_moderation(): void {
 		// comment-moderation uses using_model_preference() directly, not
 		// set_provider_model_preference(), so it cannot have Developer Mode overrides.
-		$map = \AiConnectorPriority\get_task_feature_map();
+		$map = \Jazzs3quence\AIPriorityManager\get_task_feature_map();
 
 		$this->assertNotContains( 'comment-moderation', $map['text'] );
 	}
@@ -57,7 +57,7 @@ class DeveloperModeTest extends TestCase {
 			'model'    => 'gpt-image-2',
 		];
 
-		$this->assertTrue( \AiConnectorPriority\is_task_fully_overridden( 'image' ) );
+		$this->assertTrue( \Jazzs3quence\AIPriorityManager\is_task_fully_overridden( 'image' ) );
 	}
 
 	public function test_task_is_not_fully_overridden_when_only_some_features_are_overridden(): void {
@@ -67,17 +67,17 @@ class DeveloperModeTest extends TestCase {
 			'model'    => 'claude-sonnet-4-6',
 		];
 
-		$this->assertFalse( \AiConnectorPriority\is_task_fully_overridden( 'text' ) );
+		$this->assertFalse( \Jazzs3quence\AIPriorityManager\is_task_fully_overridden( 'text' ) );
 	}
 
 	public function test_image_task_includes_image_generation_feature(): void {
-		$map = \AiConnectorPriority\get_task_feature_map();
+		$map = \Jazzs3quence\AIPriorityManager\get_task_feature_map();
 
 		$this->assertContains( 'image-generation', $map['image'] );
 	}
 
 	public function test_vision_task_includes_alt_text_generation_feature(): void {
-		$map = \AiConnectorPriority\get_task_feature_map();
+		$map = \Jazzs3quence\AIPriorityManager\get_task_feature_map();
 
 		$this->assertContains( 'alt-text-generation', $map['vision'] );
 	}
@@ -87,7 +87,7 @@ class DeveloperModeTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_returns_empty_when_no_developer_mode_overrides_set(): void {
-		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+		$overridden = \Jazzs3quence\AIPriorityManager\get_developer_mode_overridden_tasks();
 
 		$this->assertEmpty( $overridden );
 	}
@@ -98,7 +98,7 @@ class DeveloperModeTest extends TestCase {
 			'model'    => 'claude-sonnet-4-6',
 		];
 
-		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+		$overridden = \Jazzs3quence\AIPriorityManager\get_developer_mode_overridden_tasks();
 
 		$this->assertContains( 'text', $overridden );
 	}
@@ -109,7 +109,7 @@ class DeveloperModeTest extends TestCase {
 			'model'    => 'gpt-image-2',
 		];
 
-		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+		$overridden = \Jazzs3quence\AIPriorityManager\get_developer_mode_overridden_tasks();
 
 		$this->assertContains( 'image', $overridden );
 	}
@@ -120,7 +120,7 @@ class DeveloperModeTest extends TestCase {
 			'model'    => 'gemini-flash',
 		];
 
-		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+		$overridden = \Jazzs3quence\AIPriorityManager\get_developer_mode_overridden_tasks();
 
 		$this->assertContains( 'vision', $overridden );
 	}
@@ -132,7 +132,7 @@ class DeveloperModeTest extends TestCase {
 			'model'    => 'gpt-image-2',
 		];
 
-		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+		$overridden = \Jazzs3quence\AIPriorityManager\get_developer_mode_overridden_tasks();
 
 		$this->assertContains( 'image', $overridden );
 		$this->assertNotContains( 'text', $overridden );
@@ -143,7 +143,7 @@ class DeveloperModeTest extends TestCase {
 		// An empty array stored in the option means no override is active.
 		$GLOBALS['_test_wp_options']['wpai_feature_title-generation_field_developer'] = [];
 
-		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+		$overridden = \Jazzs3quence\AIPriorityManager\get_developer_mode_overridden_tasks();
 
 		$this->assertNotContains( 'text', $overridden );
 	}
@@ -157,7 +157,7 @@ class DeveloperModeTest extends TestCase {
 			'model'    => '',
 		];
 
-		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+		$overridden = \Jazzs3quence\AIPriorityManager\get_developer_mode_overridden_tasks();
 
 		$this->assertNotContains( 'text', $overridden );
 	}
@@ -167,7 +167,7 @@ class DeveloperModeTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_get_overrides_by_task_returns_empty_when_no_overrides(): void {
-		$overrides = \AiConnectorPriority\get_developer_mode_overrides_by_task();
+		$overrides = \Jazzs3quence\AIPriorityManager\get_developer_mode_overrides_by_task();
 
 		$this->assertEmpty( $overrides );
 	}
@@ -177,7 +177,7 @@ class DeveloperModeTest extends TestCase {
 		$GLOBALS['_test_wp_options']['wpai_feature_excerpt-generation_field_developer']  = [ 'provider' => 'anthropic', 'model' => 'claude-test' ];
 		$GLOBALS['_test_wp_options']['wpai_feature_image-generation_field_developer']    = [ 'provider' => 'openai', 'model' => 'gpt-image-2' ];
 
-		$overrides = \AiConnectorPriority\get_developer_mode_overrides_by_task();
+		$overrides = \Jazzs3quence\AIPriorityManager\get_developer_mode_overrides_by_task();
 
 		$this->assertArrayHasKey( 'text', $overrides );
 		$this->assertContains( 'title-generation', $overrides['text'] );
@@ -197,7 +197,7 @@ class DeveloperModeTest extends TestCase {
 			'model'    => 'gpt-5.4-mini',
 		];
 
-		$overridden = \AiConnectorPriority\get_developer_mode_overridden_tasks();
+		$overridden = \Jazzs3quence\AIPriorityManager\get_developer_mode_overridden_tasks();
 
 		$this->assertSame( 1, count( array_filter( $overridden, fn( $t ) => $t === 'text' ) ) );
 	}

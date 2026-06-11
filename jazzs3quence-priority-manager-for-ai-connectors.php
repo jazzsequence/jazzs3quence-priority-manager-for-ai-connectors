@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       AI Connector Priority
+ * Plugin Name:       jazzs3quence Priority Manager for AI Connectors
  * Plugin URI:        https://github.com/jazzsequence/ai-connector-priority
  * Description:       Choose which AI provider to use for each task type (text, image, vision).
- * Version:           1.1.1
+ * Version:           1.2.0
  * Requires at least: 7.0
  * Requires PHP:      8.2
  * Requires Plugins:  ai
@@ -11,10 +11,10 @@
  * Author URI:        https://next.jazzsequence.com
  * License:           MIT
  * License URI:       https://opensource.org/licenses/MIT
- * Text Domain:       ai-connector-priority
+ * Text Domain:       jazzs3quence-priority-manager-for-ai-connectors
  */
 
-namespace AiConnectorPriority;
+namespace Jazzs3quence\AIPriorityManager;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -367,8 +367,8 @@ add_action(
 	'admin_menu',
 	static function (): void {
 		add_options_page(
-			__( 'AI Connector Priority', 'ai-connector-priority' ),
-			__( 'AI Priority', 'ai-connector-priority' ),
+			__( 'Priority Manager for AI Connectors', 'jazzs3quence-priority-manager-for-ai-connectors' ),
+			__( 'AI Priority', 'jazzs3quence-priority-manager-for-ai-connectors' ),
 			'manage_options',
 			PAGE_SLUG,
 			__NAMESPACE__ . '\render_page'
@@ -401,7 +401,7 @@ add_filter(
 		$links['configure'] = sprintf(
 			'<a href="%s">%s</a>',
 			esc_url( admin_url( 'options-general.php?page=' . PAGE_SLUG ) ),
-			esc_html__( 'Configure', 'ai-connector-priority' )
+			esc_html__( 'Configure', 'jazzs3quence-priority-manager-for-ai-connectors' )
 		);
 		return $links;
 	}
@@ -455,31 +455,31 @@ function render_page(): void {
 	$overrides_by_task = get_developer_mode_overrides_by_task();
 	$tasks      = [
 		'text'   => [
-			'label'       => __( 'Text Generation', 'ai-connector-priority' ),
-			'description' => __( 'Used for: title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, comment moderation.', 'ai-connector-priority' ),
+			'label'       => __( 'Text Generation', 'jazzs3quence-priority-manager-for-ai-connectors' ),
+			'description' => __( 'Used for: title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, comment moderation.', 'jazzs3quence-priority-manager-for-ai-connectors' ),
 		],
 		'image'  => [
-			'label'       => __( 'Image Generation', 'ai-connector-priority' ),
-			'description' => __( 'Used for: featured image generation, inline image generation.', 'ai-connector-priority' ),
+			'label'       => __( 'Image Generation', 'jazzs3quence-priority-manager-for-ai-connectors' ),
+			'description' => __( 'Used for: featured image generation, inline image generation.', 'jazzs3quence-priority-manager-for-ai-connectors' ),
 		],
 		'vision' => [
-			'label'       => __( 'Vision', 'ai-connector-priority' ),
-			'description' => __( 'Used for: alt text generation, image analysis.', 'ai-connector-priority' ),
+			'label'       => __( 'Vision', 'jazzs3quence-priority-manager-for-ai-connectors' ),
+			'description' => __( 'Used for: alt text generation, image analysis.', 'jazzs3quence-priority-manager-for-ai-connectors' ),
 		],
 	];
 	?>
 	<div class="wrap">
-		<h1><?php esc_html_e( 'AI Connector Priority', 'ai-connector-priority' ); ?></h1>
-		<p><?php esc_html_e( 'Choose which AI provider to use for each task type. Only active provider plugins are shown.', 'ai-connector-priority' ); ?></p>
+		<h1><?php esc_html_e( 'Priority Manager for AI Connectors', 'jazzs3quence-priority-manager-for-ai-connectors' ); ?></h1>
+		<p><?php esc_html_e( 'Choose which AI provider to use for each task type. Only active provider plugins are shown.', 'jazzs3quence-priority-manager-for-ai-connectors' ); ?></p>
 
 		<?php if ( $saved ) : ?>
-			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'ai-connector-priority' ); ?></p></div>
+			<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'jazzs3quence-priority-manager-for-ai-connectors' ); ?></p></div>
 		<?php endif; ?>
 
 		<?php if ( empty( $active ) ) : ?>
 			<div class="notice notice-warning">
 				<p>
-					<?php esc_html_e( 'No AI provider plugins are active. Install and activate at least one provider plugin to configure your preferred provider.', 'ai-connector-priority' ); ?>
+					<?php esc_html_e( 'No AI provider plugins are active. Install and activate at least one provider plugin to configure your preferred provider.', 'jazzs3quence-priority-manager-for-ai-connectors' ); ?>
 				</p>
 			</div>
 		<?php else : ?>
@@ -506,7 +506,7 @@ function render_page(): void {
 					<tbody>
 						<tr>
 							<th scope="row">
-								<label for="<?php echo esc_attr( $field_id ); ?>"><?php esc_html_e( 'Provider', 'ai-connector-priority' ); ?></label>
+								<label for="<?php echo esc_attr( $field_id ); ?>"><?php esc_html_e( 'Provider', 'jazzs3quence-priority-manager-for-ai-connectors' ); ?></label>
 							</th>
 							<td>
 								<select name="aicp_priority[<?php echo esc_attr( $task ); ?>]" id="<?php echo esc_attr( $field_id ); ?>" <?php disabled( $task_disabled ); ?>>
@@ -519,10 +519,10 @@ function render_page(): void {
 								<?php if ( $task_overridden ) : ?>
 									<span class="description aicp-developer-mode-notice">
 										<?php if ( $task_disabled ) : ?>
-											<?php esc_html_e( 'Overridden by AI plugin — this selection has no effect.', 'ai-connector-priority' ); ?>
+											<?php esc_html_e( 'Overridden by AI plugin — this selection has no effect.', 'jazzs3quence-priority-manager-for-ai-connectors' ); ?>
 										<?php else : ?>
 											<?php
-											echo esc_html__( 'Overridden by AI plugin for:', 'ai-connector-priority' ) . ' ';
+											echo esc_html__( 'Overridden by AI plugin for:', 'jazzs3quence-priority-manager-for-ai-connectors' ) . ' ';
 											echo esc_html( implode( ', ', $overridden_features ) ) . '.';
 											?>
 										<?php endif; ?>
@@ -534,7 +534,7 @@ function render_page(): void {
 				</table>
 			<?php endforeach; ?>
 
-			<?php submit_button( __( 'Save Settings', 'ai-connector-priority' ) ); ?>
+			<?php submit_button( __( 'Save Settings', 'jazzs3quence-priority-manager-for-ai-connectors' ) ); ?>
 		</form>
 		<?php endif; ?>
 	</div>

@@ -3,7 +3,7 @@
  * Unit tests for provider preference and model list reordering.
  */
 
-namespace AiConnectorPriority\Tests\Unit;
+namespace Jazzs3quence\AIPriorityManager\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
@@ -35,7 +35,7 @@ class PrioritiesTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_returns_string_not_array_per_task(): void {
-		$priorities = \AiConnectorPriority\get_priorities();
+		$priorities = \Jazzs3quence\AIPriorityManager\get_priorities();
 
 		$this->assertIsString( $priorities['text'] );
 		$this->assertIsString( $priorities['image'] );
@@ -43,7 +43,7 @@ class PrioritiesTest extends TestCase {
 	}
 
 	public function test_defaults_to_first_active_provider_for_each_task(): void {
-		$priorities = \AiConnectorPriority\get_priorities();
+		$priorities = \Jazzs3quence\AIPriorityManager\get_priorities();
 
 		$this->assertNotEmpty( $priorities['text'] );
 		$this->assertNotEmpty( $priorities['image'] );
@@ -51,17 +51,17 @@ class PrioritiesTest extends TestCase {
 	}
 
 	public function test_saved_provider_overrides_default(): void {
-		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+		$GLOBALS['_test_wp_options'][ \Jazzs3quence\AIPriorityManager\OPTION_KEY ] = [
 			'text' => 'openai',
 		];
 
-		$priorities = \AiConnectorPriority\get_priorities();
+		$priorities = \Jazzs3quence\AIPriorityManager\get_priorities();
 
 		$this->assertSame( 'openai', $priorities['text'] );
 	}
 
 	public function test_priorities_has_all_three_task_keys(): void {
-		$priorities = \AiConnectorPriority\get_priorities();
+		$priorities = \Jazzs3quence\AIPriorityManager\get_priorities();
 
 		$this->assertArrayHasKey( 'text', $priorities );
 		$this->assertArrayHasKey( 'image', $priorities );
@@ -70,11 +70,11 @@ class PrioritiesTest extends TestCase {
 
 	public function test_migrates_old_array_format_to_string(): void {
 		// 1.0.x stored an ordered array; 1.1.x stores a single string.
-		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+		$GLOBALS['_test_wp_options'][ \Jazzs3quence\AIPriorityManager\OPTION_KEY ] = [
 			'text' => [ 'openai', 'google', 'anthropic' ],
 		];
 
-		$priorities = \AiConnectorPriority\get_priorities();
+		$priorities = \Jazzs3quence\AIPriorityManager\get_priorities();
 
 		$this->assertSame( 'openai', $priorities['text'] );
 	}
@@ -82,7 +82,7 @@ class PrioritiesTest extends TestCase {
 	public function test_returns_empty_string_when_no_providers_active(): void {
 		$GLOBALS['_test_ai_connectors'] = [];
 
-		$priorities = \AiConnectorPriority\get_priorities();
+		$priorities = \Jazzs3quence\AIPriorityManager\get_priorities();
 
 		$this->assertSame( '', $priorities['text'] );
 		$this->assertSame( '', $priorities['image'] );
@@ -94,7 +94,7 @@ class PrioritiesTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_preferred_provider_models_come_first(): void {
-		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+		$GLOBALS['_test_wp_options'][ \Jazzs3quence\AIPriorityManager\OPTION_KEY ] = [
 			'text' => 'openai',
 		];
 		$models = [
@@ -103,7 +103,7 @@ class PrioritiesTest extends TestCase {
 			[ 'openai', 'gpt-a' ],
 		];
 
-		$result = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+		$result = \Jazzs3quence\AIPriorityManager\reorder_model_list( $models, 'text' );
 
 		$this->assertSame( 'openai', $result[0][0] );
 	}
@@ -112,7 +112,7 @@ class PrioritiesTest extends TestCase {
 		$GLOBALS['_test_ai_connectors'] = [
 			'google' => [ 'name' => 'Google (Gemini)' ],
 		];
-		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+		$GLOBALS['_test_wp_options'][ \Jazzs3quence\AIPriorityManager\OPTION_KEY ] = [
 			'text' => 'google',
 		];
 		$models = [
@@ -121,7 +121,7 @@ class PrioritiesTest extends TestCase {
 			[ 'openai', 'gpt-a' ],
 		];
 
-		$result    = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+		$result    = \Jazzs3quence\AIPriorityManager\reorder_model_list( $models, 'text' );
 		$providers = array_column( $result, 0 );
 
 		$this->assertContains( 'google', $providers );
@@ -130,7 +130,7 @@ class PrioritiesTest extends TestCase {
 	}
 
 	public function test_other_active_providers_follow_preferred_in_original_order(): void {
-		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+		$GLOBALS['_test_wp_options'][ \Jazzs3quence\AIPriorityManager\OPTION_KEY ] = [
 			'text' => 'openai',
 		];
 		$models = [
@@ -139,7 +139,7 @@ class PrioritiesTest extends TestCase {
 			[ 'openai', 'gpt-a' ],
 		];
 
-		$result    = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+		$result    = \Jazzs3quence\AIPriorityManager\reorder_model_list( $models, 'text' );
 		$providers = array_column( $result, 0 );
 
 		$this->assertSame( 'openai', $providers[0] );
@@ -154,13 +154,13 @@ class PrioritiesTest extends TestCase {
 			[ 'google', 'gemini-a' ],
 		];
 
-		$result = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+		$result = \Jazzs3quence\AIPriorityManager\reorder_model_list( $models, 'text' );
 
 		$this->assertEmpty( $result );
 	}
 
 	public function test_preserves_per_provider_model_order(): void {
-		$GLOBALS['_test_wp_options'][ \AiConnectorPriority\OPTION_KEY ] = [
+		$GLOBALS['_test_wp_options'][ \Jazzs3quence\AIPriorityManager\OPTION_KEY ] = [
 			'text' => 'google',
 		];
 		$models = [
@@ -169,7 +169,7 @@ class PrioritiesTest extends TestCase {
 			[ 'openai', 'gpt-4' ],
 		];
 
-		$result = \AiConnectorPriority\reorder_model_list( $models, 'text' );
+		$result = \Jazzs3quence\AIPriorityManager\reorder_model_list( $models, 'text' );
 
 		$this->assertSame( [ 'google', 'gemini-flash' ], $result[0] );
 		$this->assertSame( [ 'google', 'gemini-pro' ], $result[1] );
