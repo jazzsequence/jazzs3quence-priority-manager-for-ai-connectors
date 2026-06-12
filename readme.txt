@@ -4,7 +4,7 @@ Tags: ai, llm, connectors, providers, priority
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -45,6 +45,9 @@ When Developer Mode has a provider and model set for a specific feature, that fe
 The settings page will show a notice next to any task type that has at least one feature with a Developer Mode override active.
 
 == Changelog ==
+
+= 1.2.1 =
+* Move inline admin CSS to a separate file (`assets/css/admin.css`) and enqueue via `wp_enqueue_style()` on `admin_enqueue_scripts`
 
 = 1.2.0 =
 * Renamed plugin to jazzs3quence Priority Manager for AI Connectors; updated slug, namespace (`Jazzs3quence\AIPriorityManager`), and Packagist package name

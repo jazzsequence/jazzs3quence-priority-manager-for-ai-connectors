@@ -3,7 +3,7 @@
  * Plugin Name:       jazzs3quence Priority Manager for AI Connectors
  * Plugin URI:        https://github.com/jazzsequence/jazzs3quence-priority-manager-for-ai-connectors
  * Description:       Choose which AI provider to use for each task type (text, image, vision).
- * Version:           1.2.0
+ * Version:           1.2.1
  * Requires at least: 7.0
  * Requires PHP:      8.2
  * Requires Plugins:  ai
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 const OPTION_KEY = 'aicp_connector_priority';
 const PAGE_SLUG  = 'aicp-connector-priority';
-const VERSION    = '1.2.0';
+const VERSION    = '1.2.1';
 
 /**
  * Returns registered AI provider connectors from the WordPress AI plugin.
