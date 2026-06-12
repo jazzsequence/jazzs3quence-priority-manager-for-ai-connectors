@@ -22,6 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 const OPTION_KEY = 'aicp_connector_priority';
 const PAGE_SLUG  = 'aicp-connector-priority';
+const VERSION    = '1.2.0';
 
 /**
  * Returns registered AI provider connectors from the WordPress AI plugin.
@@ -377,21 +378,17 @@ add_action(
 );
 
 add_action(
-	'admin_head',
-	static function (): void {
-		$screen = get_current_screen();
-		if ( ! $screen || 'settings_page_' . PAGE_SLUG !== $screen->id ) {
+	'admin_enqueue_scripts',
+	static function ( string $hook_suffix ): void {
+		if ( 'settings_page_' . PAGE_SLUG !== $hook_suffix ) {
 			return;
 		}
-		?>
-		<style>
-			.aicp-developer-mode-notice {
-				font-style: italic;
-				color: #cc0000;
-				margin: 0 1em;
-			}
-		</style>
-		<?php
+		wp_enqueue_style(
+			'aicp-admin',
+			plugin_dir_url( __FILE__ ) . 'assets/css/admin.css',
+			[],
+			VERSION
+		);
 	}
 );
 
