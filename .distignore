@@ -1,5 +1,6 @@
 .claude
 .distignore
+.wordpress-org
 .git
 .github
 .gitignore
