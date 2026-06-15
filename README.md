@@ -27,8 +27,6 @@ Alternatively, install via Composer:
 composer require jazzsequence/jazzs3quence-priority-manager-for-ai-connectors
 ```
 
-Or drop the plugin file into your `mu-plugins` directory. Note that mu-plugins do not receive automatic updates through the WordPress admin.
-
 ## Usage
 
 Once activated, go to **Settings → AI Priority** to choose your preferred provider for each task type.
