@@ -6,10 +6,12 @@ on:
     paths-ignore:
       - '**/*.md'
       - '**/*.txt'
+      - '.github/workflows/**'
   pull_request:
     paths-ignore:
       - '**/*.md'
       - '**/*.txt'
+      - '.github/workflows/**'
 
 jobs:
   lint:
