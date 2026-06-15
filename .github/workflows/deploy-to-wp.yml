@@ -14,10 +14,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=$(grep 'Stable tag:' readme.txt | awk '{print $3}')" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy to WordPress.org
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          VERSION: ${{ steps.get_version.outputs.version }}
         with:
           slug: jazzs3quence-priority-manager-for-ai-connectors
