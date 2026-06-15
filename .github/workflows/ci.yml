@@ -7,11 +7,13 @@ on:
       - '**/*.md'
       - '**/*.txt'
       - '.github/workflows/**'
+      - '.wordpress-org/**'
   pull_request:
     paths-ignore:
       - '**/*.md'
       - '**/*.txt'
       - '.github/workflows/**'
+      - '.wordpress-org/**'
 
 jobs:
   lint:
