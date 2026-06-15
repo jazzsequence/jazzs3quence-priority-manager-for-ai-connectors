@@ -162,6 +162,29 @@ jobs:
       - name: Run unit tests
         run: composer test:phpunit
 
+  validate-plugin-version:
+    name: Validate Tested Up To Version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate plugin tested up to version
+        uses: jazzsequence/action-validate-plugin-version@v2.0.1
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+  vulnerability-scan:
+    name: Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Scan for vulnerabilities
+        uses: jazzsequence/action-wordpress-vulnerability-scanner@1.0.1
+        with:
+          type: plugin
+          name: jazzs3quence-priority-manager-for-ai-connectors
+
   integration-tests:
     name: Integration tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
