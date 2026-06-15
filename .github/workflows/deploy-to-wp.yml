@@ -29,5 +29,4 @@ jobs:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           VERSION: ${{ steps.get_version.outputs.version }}
-        with:
-          slug: jazzs3quence-priority-manager-for-ai-connectors
+          SLUG: jazzs3quence-priority-manager-for-ai-connectors
