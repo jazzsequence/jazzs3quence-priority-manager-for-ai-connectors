@@ -3,7 +3,7 @@
  * Plugin Name:       jazzs3quence Priority Manager for AI Connectors
  * Plugin URI:        https://github.com/jazzsequence/jazzs3quence-priority-manager-for-ai-connectors
  * Description:       Choose which AI provider to use for each task type (text, image, vision).
- * Version:           1.2.1
+ * Version:           1.3.0
  * Requires at least: 7.0
  * Requires PHP:      8.2
  * Requires Plugins:  ai
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 const OPTION_KEY = 'aicp_connector_priority';
 const PAGE_SLUG  = 'aicp-connector-priority';
-const VERSION    = '1.2.1';
+const VERSION    = '1.3.0';
 
 /**
  * Returns registered AI provider connectors from the WordPress AI plugin.
@@ -257,8 +257,17 @@ add_filter( 'wpai_preferred_vision_models', __NAMESPACE__ . '\reorder_models_for
  * Developer Mode overrides can apply). This list must be kept in sync with the
  * AI plugin — add new entries here when the AI plugin introduces new features.
  *
- * Features that call using_model_preference() directly (e.g. comment-moderation)
- * are NOT included because they cannot have per-feature Developer Mode overrides.
+ * Two kinds of feature are deliberately excluded:
+ *
+ * 1. Features that call using_model_preference() directly with no feature class
+ *    (e.g. comment-moderation, image-prompt generation). They still honour the
+ *    wpai_preferred_*_models filters, so this plugin's selection applies to them,
+ *    but they cannot have a per-feature Developer Mode override to report.
+ * 2. Features that pass their own hard-coded fallback model list to
+ *    set_provider_model_preference() instead of the filtered preference list
+ *    (currently type-ahead). Those never reach wpai_preferred_text_models, so
+ *    this plugin's selection has no effect on them and flagging them as
+ *    "overridden" would be misleading.
  *
  * @return array<string, string[]> Task type => list of feature IDs.
  */
@@ -273,6 +282,9 @@ function get_task_feature_map(): array {
 			'content-resizing',
 			'meta-description',
 			'content-classification',
+			'content-translation',
+			'slug-generation',
+			'suggest-reply',
 		],
 		'image'  => [ 'image-generation' ],
 		'vision' => [ 'alt-text-generation' ],
@@ -453,7 +465,7 @@ function render_page(): void {
 	$tasks      = [
 		'text'   => [
 			'label'       => __( 'Text Generation', 'jazzs3quence-priority-manager-for-ai-connectors' ),
-			'description' => __( 'Used for: title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, comment moderation.', 'jazzs3quence-priority-manager-for-ai-connectors' ),
+			'description' => __( 'Used for: title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, content classification, content translation, slug generation, suggested replies, comment moderation.', 'jazzs3quence-priority-manager-for-ai-connectors' ),
 		],
 		'image'  => [
 			'label'       => __( 'Image Generation', 'jazzs3quence-priority-manager-for-ai-connectors' ),

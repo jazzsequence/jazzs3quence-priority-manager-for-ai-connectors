@@ -42,12 +42,44 @@ class DeveloperModeTest extends TestCase {
 		$this->assertContains( 'content-classification', $map['text'] );
 	}
 
+	public function test_text_task_includes_ai_plugin_1_3_features(): void {
+		// Content Translation, Slug Generation and Suggest Reply were added in AI
+		// plugin 1.3.0; all three pass a feature class to set_provider_model_preference()
+		// and fall back to the filtered text model preference list.
+		$map = \Jazzs3quence\AIPriorityManager\get_task_feature_map();
+
+		$this->assertContains( 'content-translation', $map['text'] );
+		$this->assertContains( 'slug-generation', $map['text'] );
+		$this->assertContains( 'suggest-reply', $map['text'] );
+	}
+
 	public function test_text_task_does_not_include_comment_moderation(): void {
 		// comment-moderation uses using_model_preference() directly, not
 		// set_provider_model_preference(), so it cannot have Developer Mode overrides.
 		$map = \Jazzs3quence\AIPriorityManager\get_task_feature_map();
 
 		$this->assertNotContains( 'comment-moderation', $map['text'] );
+	}
+
+	public function test_text_task_does_not_include_type_ahead(): void {
+		// type-ahead passes its own hard-coded fallback model list to
+		// set_provider_model_preference(), so wpai_preferred_text_models never runs
+		// for it and this plugin's selection cannot apply either way.
+		$map = \Jazzs3quence\AIPriorityManager\get_task_feature_map();
+
+		$this->assertNotContains( 'type-ahead', $map['text'] );
+	}
+
+	public function test_new_text_features_are_detected_as_overrides(): void {
+		$GLOBALS['_test_wp_options']['wpai_feature_slug-generation_field_developer'] = [
+			'provider' => 'google',
+			'model'    => 'gemini-3.5-flash',
+		];
+
+		$overrides = \Jazzs3quence\AIPriorityManager\get_developer_mode_overrides_by_task();
+
+		$this->assertSame( [ 'slug-generation' ], $overrides['text'] );
+		$this->assertFalse( \Jazzs3quence\AIPriorityManager\is_task_fully_overridden( 'text' ) );
 	}
 
 	public function test_task_is_fully_overridden_when_all_its_features_are_overridden(): void {
