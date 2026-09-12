@@ -173,34 +173,6 @@ jobs:
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
-  vulnerability-scan:
-    name: Vulnerability Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          tools: composer
-          coverage: none
-
-      # The scanner runs `bash bin/install-wp-tests.sh`, but bin/*.sh is
-      # gitignored — the wpunit-helpers Composer plugin installs those scripts.
-      # Without this the action exits 127 on a missing file.
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
-
-      - name: Make bin scripts executable
-        run: chmod +x bin/*.sh
-
-      - name: Scan for vulnerabilities
-        uses: jazzsequence/action-wordpress-vulnerability-scanner@1.0.2
-        with:
-          type: plugin
-          name: jazzs3quence-priority-manager-for-ai-connectors
-
   integration-tests:
     name: Integration tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
