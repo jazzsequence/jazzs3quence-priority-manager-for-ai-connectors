@@ -196,7 +196,7 @@ jobs:
         run: chmod +x bin/*.sh
 
       - name: Scan for vulnerabilities
-        uses: jazzsequence/action-wordpress-vulnerability-scanner@1.0.1
+        uses: jazzsequence/action-wordpress-vulnerability-scanner@1.0.2
         with:
           type: plugin
           name: jazzs3quence-priority-manager-for-ai-connectors
