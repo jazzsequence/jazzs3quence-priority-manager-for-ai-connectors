@@ -2,9 +2,9 @@
 Contributors: jazzs3quence
 Tags: ai, llm, connectors, providers, priority
 Requires at least: 7.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.2.1
+Stable tag: 1.3.0
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -16,7 +16,7 @@ When you have multiple AI providers connected via Settings → Connectors, WordP
 
 Go to **Settings → AI Priority** to set your preferred provider for:
 
-* **Text generation** — title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, comment moderation
+* **Text generation** — title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, content classification, content translation, slug generation, suggested replies, comment moderation
 * **Image generation** — featured image generation, inline image generation
 * **Vision** — alt text generation, image analysis
 
@@ -36,6 +36,10 @@ Requires the [AI plugin](https://wordpress.org/plugins/ai/) and at least one act
 
 This plugin removes deactivated providers from the model list before it reaches the AI plugin. If your preferred provider is deactivated, the AI plugin uses whatever provider comes first in its default list.
 
+= Are there AI features this plugin does not affect? =
+
+Most AI plugin features ask the AI plugin for its preferred model list, which is what this plugin reorders. A few features pin their own model list instead — Type Ahead is the current example — so they always use the models the AI plugin hard-codes for them regardless of what you select here.
+
 = How does this interact with the AI plugin's Developer Mode? =
 
 Developer Mode (Settings → AI → Developer Mode) configures a specific provider and model for individual AI features (e.g. Title Generation, Alt Text). This plugin sets a preferred provider per task type (text, image, vision), which covers multiple features each.
@@ -45,6 +49,12 @@ When Developer Mode has a provider and model set for a specific feature, that fe
 The settings page will show a notice next to any task type that has at least one feature with a Developer Mode override active.
 
 == Changelog ==
+
+= 1.3.0 =
+* Added the AI plugin 1.3.0 text features to Developer Mode override detection: Content Translation (`content-translation`), Slug Generation (`slug-generation`) and Suggest Reply (`suggest-reply`). Overrides on those features are now reported on the settings page instead of being silently ignored
+* Documented that Type Ahead pins its own model list and is therefore unaffected by this plugin's selection
+* Updated the task type descriptions to list the features each one actually covers
+* Tested up to WordPress 7.1
 
 = 1.2.1 =
 * Move inline admin CSS to a separate file (`assets/css/admin.css`) and enqueue via `wp_enqueue_style()` on `admin_enqueue_scripts`
