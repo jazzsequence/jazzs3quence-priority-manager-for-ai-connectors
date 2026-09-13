@@ -35,7 +35,7 @@ Once activated, go to **Settings → AI Priority** to choose your preferred prov
 
 | Task | Used for |
 |------|----------|
-| **Text generation** | Title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, comment moderation |
+| **Text generation** | Title generation, excerpt, summarization, content resizing, editorial notes, meta descriptions, content classification, content translation, slug generation, suggested replies, comment moderation |
 | **Image generation** | Featured image generation, inline image generation |
 | **Vision** | Alt text generation, image analysis |
 
@@ -48,6 +48,8 @@ Provider capabilities are detected automatically from the AI plugin's registry. 
 ### How provider selection works
 
 The AI plugin selects a provider from a preference list. This plugin moves your chosen provider's models to the front of that list.
+
+Features that build their own model list rather than asking the AI plugin for the preferred one are not affected. Type Ahead is the current example: it passes a hard-coded model list to the AI plugin, so `wpai_preferred_text_models` never runs for it and your selection does not apply.
 
 ### Interaction with Developer Mode
 

@@ -45,13 +45,17 @@ An `admin_head` hook outputs a small `<style>` block scoped to our settings page
 
 This plugin is tightly coupled to the WordPress AI plugin and must be updated reactively when the AI plugin adds new capabilities:
 
-1. **New AI features** — When the AI plugin adds a new ability that calls `set_provider_model_preference()`, add its feature ID to the appropriate task type in `get_task_feature_map()`. Features that call `using_model_preference()` directly cannot have Developer Mode overrides and should not be added.
+1. **New AI features** — When the AI plugin adds a new ability that calls `set_provider_model_preference()` *and* lets the fallback model list default to the filtered preference list, add its feature ID to the appropriate task type in `get_task_feature_map()`. Two kinds of feature stay out of the map:
+   - Abilities that call `using_model_preference()` directly, or pass `null` as the feature class (comment moderation, image-prompt generation). They honour the `wpai_preferred_*_models` filters, so this plugin's selection still applies, but there is no per-feature Developer Mode override to report.
+   - Abilities that pass their own hard-coded `$fallback_models` array to `set_provider_model_preference()` (currently `type-ahead`). Those bypass `wpai_preferred_*_models` entirely, so this plugin has no influence on them at all and flagging them as "overridden" would mislead.
 
 2. **New task types** — If the AI plugin introduces a new task type beyond text/image/vision (e.g. audio, video), add it to the task type maps throughout the plugin: `get_task_feature_map()`, `get_priorities()`, `reorder_model_list()`, the filter callbacks, and `render_page()`.
 
 3. **New filter hooks** — If the AI plugin introduces new `wpai_preferred_*_models` filters, add corresponding filter callbacks following the pattern of `reorder_models_for_text/image/vision`.
 
-To check for new features in the AI plugin: look for classes in `includes/Abilities/` that call `$this->set_provider_model_preference()` and cross-reference against the current `get_task_feature_map()` return value.
+To check for new features in the AI plugin: look for classes in `includes/Abilities/` that call `$this->filter_prompt_builder()` with a non-null feature class (which is what reaches `set_provider_model_preference()`), read the `$fallback_models` argument each one passes, then cross-reference the feature class's `get_id()` against the current `get_task_feature_map()` return value.
+
+Last verified against AI plugin **1.3.0**. As of that version the map covers every eligible feature; `type-ahead` is the only feature deliberately excluded for pinning its own model list.
 
 ### Key: capability detection
 
